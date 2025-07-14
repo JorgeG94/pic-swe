@@ -1,7 +1,7 @@
 module pic_flux_2d
    use pic_types
    use pic_state_2d
-   use local_pic_constants, only: gravity
+   use local_pic_constants, only: gravity, epsilon
    implicit none
 
 contains
@@ -10,7 +10,6 @@ contains
    subroutine compute_rusanov_flux_x(state, flux_h, flux_hu, flux_hv)
       type(state_2d_type), intent(in) :: state
       real(dp), allocatable, intent(out) :: flux_h(:,:), flux_hu(:,:), flux_hv(:,:)
-      real(dp), parameter :: epsilon = 1.0e-3_dp
 
       workspace: block
 
@@ -84,7 +83,6 @@ contains
    subroutine compute_rusanov_flux_y(state, flux_h, flux_hu, flux_hv)
       type(state_2d_type), intent(in) :: state
       real(dp), allocatable, intent(out) :: flux_h(:,:), flux_hu(:,:), flux_hv(:,:)
-      real(dp), parameter :: epsilon = 1.0e-3_dp
 
       workspace: block
 

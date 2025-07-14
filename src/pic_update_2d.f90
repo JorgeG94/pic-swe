@@ -1,6 +1,7 @@
 module pic_update_2d
   use pic_types, only: default_int, dp
   use pic_state_2d, only: state_2d_type 
+  use local_pic_constants, only: epsilon
   implicit none 
 
   contains 
@@ -11,7 +12,6 @@ module pic_update_2d
     real(dp), intent(in) :: flux_x_h(:,:), flux_x_hu(:,:), flux_x_hv(:,:)
     real(dp), intent(in) :: flux_y_h(:,:), flux_y_hu(:,:), flux_y_hv(:,:)
     real(dp), intent(in) :: dt
-    real(dp), parameter :: epsilon = 1.0e-3_dp
 
     integer :: i, j, nx, ny
     real(dp) :: dx, dy

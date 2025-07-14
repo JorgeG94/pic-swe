@@ -25,6 +25,7 @@ contains
          ", Δmass: " // to_string(current_mass - initial_mass))
 
    end subroutine check_mass_conservation
+
    subroutine write_water_height_to_csv(state, step)
       use, intrinsic :: iso_fortran_env, only: dp => real64
       class(state_2d_type), intent(in) :: state
@@ -108,7 +109,7 @@ contains
 
       allocate(flux_x_h(nx+1, ny), flux_x_hu(nx+1, ny), flux_x_hv(nx+1, ny))
       allocate(flux_y_h(nx, ny+1), flux_y_hu(nx, ny+1), flux_y_hv(nx, ny+1))
-      block
+      evolve_loop: block
          type(pic_timer_type) :: my_timer
          real(dp) :: elapsed_time
          real(dp), parameter :: h_min = 1.0e-5_dp
@@ -129,7 +130,6 @@ contains
             call compute_rusanov_flux_y(state, flux_y_h, flux_y_hu, flux_y_hv)
 
             ! Update state
-            
             before_mass= sum(state%water_height) * state%grid%dx  * state%grid%dy
             call update_state(state, flux_x_h, flux_x_hu, flux_x_hv, &
                flux_y_h, flux_y_hu, flux_y_hv, dt)
@@ -145,8 +145,9 @@ contains
             if (mod(step, print_interval) == 0) then
                call my_timer%stop()
                elapsed_time = my_timer%get_elapsed_time()
-            call check_mass_conservation(state, initial_mass, step)
-               block
+               call check_mass_conservation(state, initial_mass, step)
+               printing: block
+
                   real(dp) :: total_mass
                   real(dp) :: total_mom_x, total_mom_y
                   real(dp) :: net_flux
@@ -155,13 +156,13 @@ contains
                   total_mass = sum(state%water_height) * state%grid%dx * state%grid%dy
                   total_mom_x = sum(state%x_momentum) * state%grid%dx * state%grid%dy
                   total_mom_y = sum(state%y_momentum) * state%grid%dx * state%grid%dy
-                  !print '(A,I6,2X,A,F10.4,2X,A,E12.5,2X,A,F10.6,2X,A,F12.6)', &
-                  !      'Step:', step, 'Time:', t, 'dt:', dt, 'Elapsed:', elapsed_time, 'Mass:', total_mass
+
                   call global%info("Step " // to_string(step) // " time " // to_string(t) // &
                      " dt " // to_string(dt) // " time per steps " // to_string(elapsed_time) // &
                      " mass " // to_string(total_mass) // &
                      " net flux " // to_string(net_flux) //  " Δmass " // to_string(after_mass - before_mass))
-               end block
+
+               end block printing
 
                call write_water_height_to_csv(state, step)
             end if
@@ -174,7 +175,7 @@ contains
       call global%info("Final mass: " // to_string(final_mass) // &
          ", Initial mass: " // to_string(initial_mass) // &
          ", Δmass: " // to_string(final_mass - initial_mass))
-      end block
+      end block evolve_loop
 
       deallocate(flux_x_h, flux_x_hu, flux_x_hv)
       deallocate(flux_y_h, flux_y_hu, flux_y_hv)

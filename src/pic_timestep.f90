@@ -1,7 +1,7 @@
 module pic_timestep
   use pic_types, only: default_int, dp
   use pic_state_2d, only: state_2d_type 
-  use local_pic_constants, only: gravity
+  use local_pic_constants, only: gravity, epsilon
   implicit none 
 
   contains 
@@ -10,7 +10,6 @@ module pic_timestep
     type(state_2d_type), intent(in) :: state 
     real(dp), intent(in) :: cfl 
     real(dp) :: dt 
-    real(dp), parameter :: epsilon = 1.0e-6_dp
 
     integer(default_int) :: i,j,nx,ny 
     real(dp) :: dx, dy, h, u, v, a, max_speed 
