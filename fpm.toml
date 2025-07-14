@@ -19,3 +19,4 @@ source-form = "free"
 
 [dependencies]
 pic.git = "https://github.com/JorgeG94/pic"
+openmp="*"
