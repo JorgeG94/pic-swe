@@ -28,7 +28,7 @@ program main
       real(dp) :: cfl
 
       t_end = 50.0_dp
-      cfl = 0.3_dp
+      cfl = 0.1_dp
       call my_timer%start()
       call init_grid(grid, xmin, xmax, ymin, ymax, dx)
       call generate_2d_grids(grid)

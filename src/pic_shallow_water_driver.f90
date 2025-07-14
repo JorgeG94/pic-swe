@@ -53,6 +53,24 @@ end subroutine write_water_height_to_csv
     state%x_momentum(:,ny)      = state%x_momentum(:,ny-1)
     state%y_momentum(:,1)       = -state%y_momentum(:,2)
     state%y_momentum(:,ny)      = -state%y_momentum(:,ny-1)
+
+        ! Corner values (to avoid double overwrite)
+    state%water_height(1,1)     = state%water_height(2,2)
+    state%x_momentum(1,1)       = -state%x_momentum(2,2)
+    state%y_momentum(1,1)       = -state%y_momentum(2,2)
+
+    state%water_height(1,ny)    = state%water_height(2,ny-1)
+    state%x_momentum(1,ny)      = -state%x_momentum(2,ny-1)
+    state%y_momentum(1,ny)      = -state%y_momentum(2,ny-1)
+
+    state%water_height(nx,1)    = state%water_height(nx-1,2)
+    state%x_momentum(nx,1)      = -state%x_momentum(nx-1,2)
+    state%y_momentum(nx,1)      = -state%y_momentum(nx-1,2)
+
+    state%water_height(nx,ny)   = state%water_height(nx-1,ny-1)
+    state%x_momentum(nx,ny)     = -state%x_momentum(nx-1,ny-1)
+    state%y_momentum(nx,ny)     = -state%y_momentum(nx-1,ny-1)
+
   end subroutine apply_reflective_boundaries
 
 
@@ -80,6 +98,7 @@ block
 type(pic_timer_type) :: my_timer 
 real(dp) :: elapsed_time 
 real(dp), parameter :: h_min = 1.0e-5_dp
+real(dp) :: before_mass, after_mass
     do while (t < t_end)
       if (mod(step, print_interval) == 0) then
         call my_timer%start()
@@ -95,9 +114,11 @@ real(dp), parameter :: h_min = 1.0e-5_dp
       call compute_rusanov_flux_y(state, flux_y_h, flux_y_hu, flux_y_hv)
 
       ! Update state
+      before_mass= sum(state%water_height) * state%grid%dx  * state%grid%dy
       call update_state(state, flux_x_h, flux_x_hu, flux_x_hv, &
                               flux_y_h, flux_y_hu, flux_y_hv, dt)
       call enforce_min_height(state, h_min)
+      after_mass = sum(state%water_height) * state%grid%dx  * state%grid%dy
 
 
 
@@ -122,7 +143,7 @@ total_mom_y = sum(state%y_momentum) * state%grid%dx * state%grid%dy
         !      'Step:', step, 'Time:', t, 'dt:', dt, 'Elapsed:', elapsed_time, 'Mass:', total_mass
         print *, "Step " // to_string(step) // " time " // to_string(t) // " dt " // to_string(dt) &
         // " time per steps " // to_string(elapsed_time) // " mass " // to_string(total_mass) // &
-        " net flux " // to_string(net_flux)
+        " net flux " // to_string(net_flux) //  " Δmass " // to_string(after_mass - before_mass) 
 !        print *, "Total x mom" , total_mom_x, " TOtal y mom ", total_mom_y
       !print *, "min h: ", minval(state%water_height), " max " , maxval(state%water_height)
         end block
