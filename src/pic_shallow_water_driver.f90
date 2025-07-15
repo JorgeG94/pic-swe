@@ -1,7 +1,7 @@
 module pic_shallow_water_driver
    use pic_types, only: default_int, dp
    use pic_state_2d, only: state_2d_type
-   use pic_flux_2d, only: compute_rusanov_flux_x, compute_rusanov_flux_y
+   use pic_flux_2d, only: compute_rusanov_fluxes_xy
    use pic_update_2d, only: update_state, enforce_min_height
    use pic_timestep, only: compute_dt
    use pic_timers
@@ -12,6 +12,28 @@ module pic_shallow_water_driver
 
 
 contains
+
+function pad(s, width) result(padded)
+   character(len=*), intent(in) :: s
+   integer, intent(in) :: width
+   character(len=:), allocatable :: padded
+   integer :: len_s
+
+   len_s = len_trim(s)
+   if (len_s >= width) then
+      padded = s(1:width)
+   else
+      padded = repeat(" ", width - len_s) // s
+   end if
+end function pad
+
+pure function round_dp(x, ndigits) result(r)
+  real(dp), intent(in) :: x
+  integer, intent(in) :: ndigits
+  real(dp) :: r
+  r = real(nint(x * 10.0_dp**ndigits)) / 10.0_dp**ndigits
+end function round_dp
+
 
   subroutine check_mass_conservation(state, initial_mass, step)
       class(state_2d_type), intent(in) :: state
@@ -115,6 +137,10 @@ contains
          real(dp), parameter :: h_min = 1.0e-5_dp
          real(dp) :: before_mass, after_mass, initial_mass, final_mass
          initial_mass = sum(state%water_height) * state%grid%dx * state%grid%dy
+         call global%info( &
+   pad("Step", 8)     // pad("Time", 12)      // pad("dt", 12)       // &
+   pad("Time/Step", 14) // pad("Mass", 12)     // pad("Net Flux", 12) // pad("ΔMass", 12))
+
          do while (t < t_end)
             if (mod(step, print_interval) == 0) then
                call my_timer%start()
@@ -126,8 +152,9 @@ contains
             call apply_reflective_boundaries(state)
 
             ! Compute fluxes
-            call compute_rusanov_flux_x(state, flux_x_h, flux_x_hu, flux_x_hv)
-            call compute_rusanov_flux_y(state, flux_y_h, flux_y_hu, flux_y_hv)
+            !call compute_rusanov_flux_x(state, flux_x_h, flux_x_hu, flux_x_hv)
+            !call compute_rusanov_flux_y(state, flux_y_h, flux_y_hu, flux_y_hv)
+            call compute_rusanov_fluxes_xy(state, flux_x_h, flux_x_hu, flux_x_hv, flux_y_h, flux_y_hu, flux_y_hv) 
 
             ! Update state
             before_mass= sum(state%water_height) * state%grid%dx  * state%grid%dy
@@ -157,14 +184,20 @@ contains
                   total_mom_x = sum(state%x_momentum) * state%grid%dx * state%grid%dy
                   total_mom_y = sum(state%y_momentum) * state%grid%dx * state%grid%dy
 
-                  call global%info("Step " // to_string(step) // " time " // to_string(t) // &
-                     " dt " // to_string(dt) // " time per steps " // to_string(elapsed_time) // &
-                     " mass " // to_string(total_mass) // &
-                     " net flux " // to_string(net_flux) //  " Δmass " // to_string(after_mass - before_mass))
+              !    call global%info("Step " // to_string(step) // " time " // to_string(t) // &
+              !       " dt " // to_string(dt) // " time per steps " // to_string(elapsed_time) // &
+              !       " mass " // to_string(total_mass) // &
+              !       " net flux " // to_string(net_flux) //  " Δmass " // to_string(after_mass - before_mass))
+              call global%info( &
+   pad(to_string(step), 8)        // " " // pad(to_string(round_dp(t,4)), 12) // " "   // &
+   pad(to_string(round_dp(dt,4)), 12)         // " " //  pad(to_string(round_dp(elapsed_time,4)), 14) // " " // &
+   pad(to_string(total_mass), 12) // " " // pad(to_string(round_dp(net_flux,4)), 12) // " "    // &
+   pad(to_string(round_dp((after_mass - before_mass),4)), 12))
+
 
                end block printing
 
-               call write_water_height_to_csv(state, step)
+               !call write_water_height_to_csv(state, step)
             end if
 
             final_mass = sum(state%water_height) * state%grid%dx * state%grid%dy

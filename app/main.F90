@@ -19,7 +19,7 @@ program main
 
    xmin = zero
    ymin = zero
-   xmax = 500_dp
+   xmax = 700_dp
    ymax = 200_dp
    dx = 0.1_dp
    block
@@ -32,7 +32,7 @@ program main
       real(dp), parameter :: h_right = 7.0_dp
       real(dp), parameter :: x_split = 250.0_dp
 
-      t_end = 2.0_dp
+      t_end = 0.2_dp
       cfl = 0.45_dp
       call my_timer%start()
       call init_grid(grid, xmin, xmax, ymin, ymax, dx)
