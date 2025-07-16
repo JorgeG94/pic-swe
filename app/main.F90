@@ -19,8 +19,8 @@ program main
 
    xmin = zero
    ymin = zero
-   xmax = 700_dp
-   ymax = 200_dp
+   xmax = 1000_dp
+   ymax = 500_dp
    dx = 0.1_dp
    block
       type(pic_timer_type) :: my_timer
@@ -32,8 +32,8 @@ program main
       real(dp), parameter :: h_right = 7.0_dp
       real(dp), parameter :: x_split = 250.0_dp
 
-      t_end = 0.2_dp
-      cfl = 0.45_dp
+      t_end = 0.1_dp
+      cfl = 0.3_dp
       call my_timer%start()
       call init_grid(grid, xmin, xmax, ymin, ymax, dx)
       call generate_2d_grids(grid)

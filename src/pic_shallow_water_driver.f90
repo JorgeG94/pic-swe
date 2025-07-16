@@ -133,6 +133,7 @@ end function round_dp
       allocate(flux_y_h(nx, ny+1), flux_y_hu(nx, ny+1), flux_y_hv(nx, ny+1))
       evolve_loop: block
          type(pic_timer_type) :: my_timer
+         type(pic_timer_type) :: inner_timer
          real(dp) :: elapsed_time
          real(dp), parameter :: h_min = 1.0e-5_dp
          real(dp) :: before_mass, after_mass, initial_mass, final_mass

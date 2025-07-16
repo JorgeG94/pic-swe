@@ -9,7 +9,8 @@ contains
 
   subroutine compute_rusanov_fluxes_xy(state, flux_x_h, flux_x_hu, flux_x_hv, flux_y_h, flux_y_hu, flux_y_hv)
     type(state_2d_type), intent(in) :: state 
-    real(dp), allocatable, intent(out) :: flux_x_h(:,:), flux_x_hu(:,:), flux_x_hv(:,:), flux_y_h(:,:), flux_y_hu(:,:), flux_y_hv(:,:)
+    real(dp), allocatable, intent(out) :: flux_x_h(:,:), flux_x_hu(:,:),&
+    flux_x_hv(:,:), flux_y_h(:,:), flux_y_hu(:,:), flux_y_hv(:,:)
 
     workspace: block 
 
@@ -26,18 +27,17 @@ contains
             real(dp) :: h_R, hu_R, hv_R, u_R, v_R, c_R
             real(dp) :: a_max
             real(dp) :: flux_L(3), flux_R(3), flux(3)
-            integer(default_int) :: i,j
+            integer(default_int) :: i,j, ii, jj, j_start, i_start
+            integer(default_int) :: i_end, j_end
+            integer(default_int), parameter :: bx = 32, by = 32
             real(dp), parameter :: sqroot_gravity = sqrt(gravity) 
             
 
-!!            !$omp parallel do simd collapse(2) default(shared) private(i,j, h_L, hu_L, hv_L, h_R, hu_R, hv_R) &
-!!            !$omp private(u_L, v_L, u_R, v_R, flux, flux_L, flux_R, c_L, c_R, a_max)
-!            do j = 1, ny-1
-!              do i = 1, nx - 1
-do concurrent (j = 1:ny-1, i = 1:nx-1)
-              !x_flux: block
-
-
+!$omp parallel do collapse(2) default(private)
+do jj = 1, ny-1, by
+  do ii = 1, nx-1, bx
+    do j = jj, min(jj+by-1, ny-1)
+      do i = ii, min(ii+bx-1, nx-1)
                 h_L = state%water_height(i,j)
                 hu_L = state%x_momentum(i,j)
                 hv_L = state%y_momentum(i,j)
@@ -99,7 +99,13 @@ do concurrent (j = 1:ny-1, i = 1:nx-1)
 !              end block y_flux
 
               end do 
+              end do
+              end do 
+              end do
+              !$omp end parallel do
+
 !            end do 
+
 !            !$pragma omp end parallel do simd 
 
         end block flux_loop
