@@ -57,9 +57,10 @@ contains
       dy = state%grid%dy
 
 !    do concurrent (j = 1:ny, i = 1:nx)
-      !$omp parallel do private(height, x_mom, y_mom, i, j, i_loc, j_loc)
-      do jj = 1, ny, by
-         do ii = 1, nx, bx
+      !!!$omp parallel do private(height, x_mom, y_mom, i, j, i_loc, j_loc)
+      !do jj = 1, ny, by
+       !  do ii = 1, nx, bx
+       do concurrent (jj=1:ny:by,ii=1:nx:bx)
             ! Compute flux updates into local buffer
             do j_loc = 1, min(by, ny - jj + 1)
                j = jj + j_loc - 1
@@ -90,8 +91,8 @@ contains
             end do
 
          end do
-      end do
-      !$omp end parallel do
+      !end do
+      !!$omp end parallel do
    end subroutine update_state_block
 
    subroutine enforce_min_height(state, h_min)
@@ -101,17 +102,18 @@ contains
 
       nx = state%grid%nx
       ny = state%grid%ny
-      !$omp parallel do collapse(2) private(i,j) shared(h_min)
-      do j = 1, ny
-         do i = 1, nx
+      !!$omp parallel do collapse(2) private(i,j) shared(h_min)
+      !do j = 1, ny
+       !  do i = 1, nx
+       do concurrent (j=1:ny,i=1:nx)
             if (state%water_height(i, j) < h_min) then
                state%water_height(i, j) = 0.0_dp
                state%x_momentum(i, j) = 0.0_dp
                state%y_momentum(i, j) = 0.0_dp
             end if
          end do
-      end do
-      !$omp end parallel do
+      !end do
+      !!$omp end parallel do
    end subroutine enforce_min_height
 
 end module pic_update_2d

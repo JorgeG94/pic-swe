@@ -19,8 +19,8 @@ program main
 
    xmin = zero
    ymin = zero
-   xmax = 1000_dp
-   ymax = 500_dp
+   xmax = 700_dp
+   ymax = 200_dp
    dx = 1.0_dp
    block
       type(pic_timer_type) :: my_timer

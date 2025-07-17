@@ -31,9 +31,10 @@ contains
             integer(default_int), parameter :: bx = 32, by = 32
             real(dp), parameter :: sqroot_gravity = sqrt(gravity)
 
-!$omp parallel do collapse(2) private(i, j, ii, jj, h_L, h_R, hu_L, hu_R, hv_L, hv_R, u_L, u_R, v_L, v_R, flux_L, flux_R, flux, c_L, c_R, a_max)
-            do jj = 1, ny - 1, by
-               do ii = 1, nx - 1, bx
+!!!$omp parallel do collapse(2) private(i, j, ii, jj, h_L, h_R, hu_L, hu_R, hv_L, hv_R, u_L, u_R, v_L, v_R, flux_L, flux_R, flux, c_L, c_R, a_max)
+ !           do jj = 1, ny - 1, by
+ !              do ii = 1, nx - 1, bx
+ do concurrent (jj=1:ny-1:by, ii=1:nx-1:bx) 
                   do j = jj, min(jj + by - 1, ny - 1)
                      do i = ii, min(ii + bx - 1, nx - 1)
                         h_L = state%water_height(i, j)
@@ -97,9 +98,9 @@ contains
 
                      end do
                   end do
-               end do
+               !end do
             end do
-            !$omp end parallel do
+!!            !$omp end parallel do
 
 !            end do
 

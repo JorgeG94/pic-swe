@@ -185,7 +185,7 @@ contains
 
                end block printing
 
-               call write_water_height_to_csv(state, step)
+!               call write_water_height_to_csv(state, step)
             end if
             final_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
