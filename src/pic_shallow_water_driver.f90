@@ -2,7 +2,7 @@ module pic_shallow_water_driver
    use pic_types, only: default_int, dp
    use pic_state_2d, only: state_2d_type
    use pic_flux_2d, only: compute_rusanov_fluxes_xy
-   use pic_update_2d, only: update_state, enforce_min_height
+   use pic_update_2d, only: update_state, enforce_min_height, update_state_block
    use pic_timestep, only: compute_dt
    use pic_timers
    use pic_logger, only: global=> global_logger
@@ -159,7 +159,7 @@ end function round_dp
 
             ! Update state
             before_mass= sum(state%water_height) * state%grid%dx  * state%grid%dy
-            call update_state(state, flux_x_h, flux_x_hu, flux_x_hv, &
+            call update_state_block(state, flux_x_h, flux_x_hu, flux_x_hv, &
                flux_y_h, flux_y_hu, flux_y_hv, dt)
             call enforce_min_height(state, h_min)
             after_mass = sum(state%water_height) * state%grid%dx  * state%grid%dy

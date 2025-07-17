@@ -19,9 +19,9 @@ program main
 
    xmin = zero
    ymin = zero
-   xmax = 1000_dp
-   ymax = 500_dp
-   dx = 1.0_dp
+   xmax = 500_dp
+   ymax = 200_dp
+   dx = 0.1_dp
    block
       type(pic_timer_type) :: my_timer
       real(dp) :: elapsed_time
@@ -32,7 +32,7 @@ program main
       real(dp), parameter :: h_right = 7.0_dp
       real(dp), parameter :: x_split = 250.0_dp
 
-      t_end = 0.05_dp
+      t_end = 10.0_dp
       cfl = 0.3_dp
       call my_timer%start()
       call init_grid(grid, xmin, xmax, ymin, ymax, dx)
