@@ -1,85 +1,85 @@
 module pic_grid_2d
-  use pic_types, only: default_int, dp, sp
-  implicit none 
+   use pic_types, only: default_int, dp, sp
+   implicit none
 
-  type :: grid_2d_type
-    real(dp) :: xmin, xmax 
-    real(dp) :: ymin, ymax 
+   type :: grid_2d_type
+      real(dp) :: xmin, xmax
+      real(dp) :: ymin, ymax
 
-    real(dp) :: dx, dy 
+      real(dp) :: dx, dy
 
-    integer(default_int) :: nx, ny 
+      integer(default_int) :: nx, ny
 
-    real(dp), allocatable :: x(:), y(:)
-    real(dp), allocatable :: x2d(:,:), y2d(:,:)
+      real(dp), allocatable :: x(:), y(:)
+      real(dp), allocatable :: x2d(:, :), y2d(:, :)
 
-    logical :: is_initialized = .false.
-  end type grid_2d_type 
+      logical :: is_initialized = .false.
+   end type grid_2d_type
 
-  contains 
+contains
 
-  subroutine init_grid(grid, xmin, xmax, ymin, ymax, dx, dy)
-    type(grid_2d_type), intent(out) :: grid 
-    real(dp), intent(in) :: xmin, xmax, ymin, ymax, dx 
-    real(dp), intent(in), optional :: dy
+   subroutine init_grid(grid, xmin, xmax, ymin, ymax, dx, dy)
+      type(grid_2d_type), intent(out) :: grid
+      real(dp), intent(in) :: xmin, xmax, ymin, ymax, dx
+      real(dp), intent(in), optional :: dy
 
-    grid%xmin = xmin
-    grid%xmax = xmax
-    grid%ymin = ymin
-    grid%ymax = ymax
-    grid%dx = dx 
-    if(present(dy)) then 
-      grid%dy = dy 
-    else 
-      grid%dy = dx
-    end if
+      grid%xmin = xmin
+      grid%xmax = xmax
+      grid%ymin = ymin
+      grid%ymax = ymax
+      grid%dx = dx
+      if (present(dy)) then
+         grid%dy = dy
+      else
+         grid%dy = dx
+      end if
 
-    grid%nx = int( ((xmax - xmin) / grid%dx) + 1, default_int)  
-    grid%ny = int( ((ymax - ymin) / grid%dy) + 1, default_int)  
+      grid%nx = int(((xmax - xmin)/grid%dx) + 1, default_int)
+      grid%ny = int(((ymax - ymin)/grid%dy) + 1, default_int)
 
-    allocate(grid%x(grid%nx), grid%y(grid%ny))
+      allocate (grid%x(grid%nx), grid%y(grid%ny))
 
-    block
-    integer(default_int) :: i,j 
+      block
+         integer(default_int) :: i, j
 
-    do concurrent (i = 1:grid%nx)
-      grid%x(i) = xmin + (i - 1)*grid%dx
-    end do 
-    do concurrent (i = 1:grid%ny)
-      grid%y(i) = ymin + (i - 1)*grid%dy
-    end do 
+         do concurrent(i=1:grid%nx)
+            grid%x(i) = xmin + (i - 1)*grid%dx
+         end do
+         do concurrent(i=1:grid%ny)
+            grid%y(i) = ymin + (i - 1)*grid%dy
+         end do
 
-    grid%is_initialized = .true.
-    
-    end block
-  end subroutine init_grid
+         grid%is_initialized = .true.
 
-  subroutine generate_2d_grids(grid)
-    type(grid_2d_type), intent(inout) :: grid 
+      end block
+   end subroutine init_grid
 
-    if(.not. grid%is_initialized) then 
-      error stop "grid has not been initialized!"
-    end if
+   subroutine generate_2d_grids(grid)
+      type(grid_2d_type), intent(inout) :: grid
 
-    allocate(grid%x2d(grid%nx, grid%ny), grid%y2d(grid%nx, grid%ny))
+      if (.not. grid%is_initialized) then
+         error stop "grid has not been initialized!"
+      end if
 
-    block
-    integer(default_int) :: i, j 
+      allocate (grid%x2d(grid%nx, grid%ny), grid%y2d(grid%nx, grid%ny))
 
-    do concurrent ( j = 1:grid%ny, i=1:grid%nx)
-      grid%x2d(i,j) = grid%x(i)
-      grid%y2d(i,j) = grid%y(j)
-    end do
-    end block
+      block
+         integer(default_int) :: i, j
 
-  end subroutine generate_2d_grids
+         do concurrent(j=1:grid%ny, i=1:grid%nx)
+            grid%x2d(i, j) = grid%x(i)
+            grid%y2d(i, j) = grid%y(j)
+         end do
+      end block
 
-  pure function get_grid_coords(grid, i, j) result(coord)
-    type(grid_2d_type), intent(in) :: grid 
-    integer(default_int), intent(in) :: i,j 
-    real(dp), dimension(2) :: coord
+   end subroutine generate_2d_grids
 
-    coord = [grid%x(i), grid%y(j)]
-  end function get_grid_coords
+   pure function get_grid_coords(grid, i, j) result(coord)
+      type(grid_2d_type), intent(in) :: grid
+      integer(default_int), intent(in) :: i, j
+      real(dp), dimension(2) :: coord
+
+      coord = [grid%x(i), grid%y(j)]
+   end function get_grid_coords
 
 end module pic_grid_2d

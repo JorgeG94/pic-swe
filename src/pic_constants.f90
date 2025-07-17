@@ -1,5 +1,5 @@
 module local_pic_constants
-   use pic_types, only: sp,dp
+   use pic_types, only: sp, dp
    implicit none
    private
    real(dp), parameter, public :: gravity = 9.81_dp

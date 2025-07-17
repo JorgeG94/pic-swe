@@ -6,7 +6,7 @@ program main
    use pic_grid_2d
    use pic_state_2d
    use pic_shallow_water_driver
-   use pic_logger,only: global=>global_logger, info_level
+   use pic_logger, only: global => global_logger, info_level
    implicit none
    real(dp), dimension(:, :), allocatable :: A, B, C
    integer(default_int) :: n, m, k
@@ -39,13 +39,13 @@ program main
       call generate_2d_grids(grid)
       call my_timer%stop()
       elapsed_time = my_timer%get_elapsed_time()
-      call global%info("Grid generation tok " // to_string(elapsed_time) // " seconds" )
-      call global%info("Grid size: nx = " // to_string(grid%nx) // " ny = " // to_string(grid%ny))
-      call global%info("Total number of points is " // to_string(grid%nx*grid%ny))
+      call global%info("Grid generation tok "//to_string(elapsed_time)//" seconds")
+      call global%info("Grid size: nx = "//to_string(grid%nx)//" ny = "//to_string(grid%ny))
+      call global%info("Total number of points is "//to_string(grid%nx*grid%ny))
 
       call state%initialize_state(grid)
-      call global%info("Dam break initialized with h_left = " // to_string(h_left) // &
-         ", h_right = " // to_string(h_right) // ", x_dplit = " // to_string(x_dplit))
+      call global%info("Dam break initialized with h_left = "//to_string(h_left)// &
+                       ", h_right = "//to_string(h_right)//", x_dplit = "//to_string(x_dplit))
       call initialize_dam_break(state, h_left, h_right, x_dplit)
 
       call my_timer%start()
@@ -53,6 +53,6 @@ program main
       call my_timer%stop()
       elapsed_time = my_timer%get_elapsed_time()
 
-      call global%info("Time loop took " // to_string(elapsed_time) // " seconds")
+      call global%info("Time loop took "//to_string(elapsed_time)//" seconds")
    end block
 end program main

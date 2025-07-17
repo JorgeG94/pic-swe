@@ -5,46 +5,44 @@ module pic_shallow_water_driver
    use pic_update_2d, only: update_state, enforce_min_height, update_state_block
    use pic_timestep, only: compute_dt
    use pic_timers
-   use pic_logger, only: global=> global_logger
+   use pic_logger, only: global => global_logger
    use pic_string_utils, only: to_string
 
    implicit none
 
-
 contains
 
-function pad(s, width) result(padded)
-   character(len=*), intent(in) :: s
-   integer, intent(in) :: width
-   character(len=:), allocatable :: padded
-   integer :: len_s
+   function pad(s, width) result(padded)
+      character(len=*), intent(in) :: s
+      integer, intent(in) :: width
+      character(len=:), allocatable :: padded
+      integer :: len_s
 
-   len_s = len_trim(s)
-   if (len_s >= width) then
-      padded = s(1:width)
-   else
-      padded = repeat(" ", width - len_s) // s
-   end if
-end function pad
+      len_s = len_trim(s)
+      if (len_s >= width) then
+         padded = s(1:width)
+      else
+         padded = repeat(" ", width - len_s)//s
+      end if
+   end function pad
 
-pure function round_dp(x, ndigits) result(r)
-  real(dp), intent(in) :: x
-  integer, intent(in) :: ndigits
-  real(dp) :: r
-  r = real(nint(x * 10.0_dp**ndigits)) / 10.0_dp**ndigits
-end function round_dp
+   pure function round_dp(x, ndigits) result(r)
+      real(dp), intent(in) :: x
+      integer, intent(in) :: ndigits
+      real(dp) :: r
+      r = real(nint(x*10.0_dp**ndigits))/10.0_dp**ndigits
+   end function round_dp
 
-
-  subroutine check_mass_conservation(state, initial_mass, step)
+   subroutine check_mass_conservation(state, initial_mass, step)
       class(state_2d_type), intent(in) :: state
       real(dp), intent(in) :: initial_mass
       integer, intent(in) :: step
       real(dp) :: current_mass
-      current_mass = sum(state%water_height) * state%grid%dx * state%grid%dy
-      call global%verbose("Step " // to_string(step) // " Mass conservation check: " // &
-         "Initial mass: " // to_string(initial_mass) // &
-         ", Current mass: " // to_string(current_mass) // &
-         ", Δmass: " // to_string(current_mass - initial_mass))
+      current_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
+      call global%verbose("Step "//to_string(step)//" Mass conservation check: "// &
+                          "Initial mass: "//to_string(initial_mass)// &
+                          ", Current mass: "//to_string(current_mass)// &
+                          ", Δmass: "//to_string(current_mass - initial_mass))
 
    end subroutine check_mass_conservation
 
@@ -54,20 +52,19 @@ end function round_dp
       integer, intent(in) :: step
       character(len=100) :: filename
       integer :: i, j
-      filename = "height_step_" // to_string(step) // ".csv"
+      filename = "height_step_"//to_string(step)//".csv"
 
-      open(unit=100, file=filename, status='replace')
+      open (unit=100, file=filename, status='replace')
       do j = 1, state%grid%ny
          do i = 1, state%grid%nx
-            write(100, '(F12.5)', advance='no') state%water_height(i,j)
-            if (i < state%grid%nx) write(100, '(A)', advance='no') ","
+            write (100, '(F12.5)', advance='no') state%water_height(i, j)
+            if (i < state%grid%nx) write (100, '(A)', advance='no') ","
          end do
-         write(100, *)  ! New line
+         write (100, *)  ! New line
       end do
 
-      close(100)
+      close (100)
    end subroutine write_water_height_to_csv
-
 
    subroutine apply_reflective_boundaries(state)
       type(state_2d_type), intent(inout) :: state
@@ -76,40 +73,39 @@ end function round_dp
       ny = state%grid%ny
 
       ! Reflective in X direction
-      state%water_height(1,:)     = state%water_height(2,:)
-      state%water_height(nx,:)    = state%water_height(nx-1,:)
-      state%x_momentum(1,:)       = -state%x_momentum(2,:)
-      state%x_momentum(nx,:)      = -state%x_momentum(nx-1,:)
-      state%y_momentum(1,:)       = state%y_momentum(2,:)
-      state%y_momentum(nx,:)      = state%y_momentum(nx-1,:)
+      state%water_height(1, :) = state%water_height(2, :)
+      state%water_height(nx, :) = state%water_height(nx - 1, :)
+      state%x_momentum(1, :) = -state%x_momentum(2, :)
+      state%x_momentum(nx, :) = -state%x_momentum(nx - 1, :)
+      state%y_momentum(1, :) = state%y_momentum(2, :)
+      state%y_momentum(nx, :) = state%y_momentum(nx - 1, :)
 
       ! Reflective in Y direction
-      state%water_height(:,1)     = state%water_height(:,2)
-      state%water_height(:,ny)    = state%water_height(:,ny-1)
-      state%x_momentum(:,1)       = state%x_momentum(:,2)
-      state%x_momentum(:,ny)      = state%x_momentum(:,ny-1)
-      state%y_momentum(:,1)       = -state%y_momentum(:,2)
-      state%y_momentum(:,ny)      = -state%y_momentum(:,ny-1)
+      state%water_height(:, 1) = state%water_height(:, 2)
+      state%water_height(:, ny) = state%water_height(:, ny - 1)
+      state%x_momentum(:, 1) = state%x_momentum(:, 2)
+      state%x_momentum(:, ny) = state%x_momentum(:, ny - 1)
+      state%y_momentum(:, 1) = -state%y_momentum(:, 2)
+      state%y_momentum(:, ny) = -state%y_momentum(:, ny - 1)
 
       ! Corner values (to avoid double overwrite)
-      state%water_height(1,1)     = state%water_height(2,2)
-      state%x_momentum(1,1)       = -state%x_momentum(2,2)
-      state%y_momentum(1,1)       = -state%y_momentum(2,2)
+      state%water_height(1, 1) = state%water_height(2, 2)
+      state%x_momentum(1, 1) = -state%x_momentum(2, 2)
+      state%y_momentum(1, 1) = -state%y_momentum(2, 2)
 
-      state%water_height(1,ny)    = state%water_height(2,ny-1)
-      state%x_momentum(1,ny)      = -state%x_momentum(2,ny-1)
-      state%y_momentum(1,ny)      = -state%y_momentum(2,ny-1)
+      state%water_height(1, ny) = state%water_height(2, ny - 1)
+      state%x_momentum(1, ny) = -state%x_momentum(2, ny - 1)
+      state%y_momentum(1, ny) = -state%y_momentum(2, ny - 1)
 
-      state%water_height(nx,1)    = state%water_height(nx-1,2)
-      state%x_momentum(nx,1)      = -state%x_momentum(nx-1,2)
-      state%y_momentum(nx,1)      = -state%y_momentum(nx-1,2)
+      state%water_height(nx, 1) = state%water_height(nx - 1, 2)
+      state%x_momentum(nx, 1) = -state%x_momentum(nx - 1, 2)
+      state%y_momentum(nx, 1) = -state%y_momentum(nx - 1, 2)
 
-      state%water_height(nx,ny)   = state%water_height(nx-1,ny-1)
-      state%x_momentum(nx,ny)     = -state%x_momentum(nx-1,ny-1)
-      state%y_momentum(nx,ny)     = -state%y_momentum(nx-1,ny-1)
+      state%water_height(nx, ny) = state%water_height(nx - 1, ny - 1)
+      state%x_momentum(nx, ny) = -state%x_momentum(nx - 1, ny - 1)
+      state%y_momentum(nx, ny) = -state%y_momentum(nx - 1, ny - 1)
 
    end subroutine apply_reflective_boundaries
-
 
    subroutine time_loop(state, t_end, cfl)
 
@@ -118,8 +114,8 @@ end function round_dp
       integer(default_int) :: nx, ny
 
       real(dp) :: dt, t
-      real(dp), allocatable :: flux_x_h(:,:), flux_x_hu(:,:), flux_x_hv(:,:)
-      real(dp), allocatable :: flux_y_h(:,:), flux_y_hu(:,:), flux_y_hv(:,:)
+      real(dp), allocatable :: flux_x_h(:, :), flux_x_hu(:, :), flux_x_hv(:, :)
+      real(dp), allocatable :: flux_y_h(:, :), flux_y_hu(:, :), flux_y_hv(:, :)
       integer(default_int) :: step, print_interval
 
       t = 0.0_dp
@@ -129,45 +125,41 @@ end function round_dp
       nx = state%grid%nx
       ny = state%grid%ny
 
-      allocate(flux_x_h(nx+1, ny), flux_x_hu(nx+1, ny), flux_x_hv(nx+1, ny))
-      allocate(flux_y_h(nx, ny+1), flux_y_hu(nx, ny+1), flux_y_hv(nx, ny+1))
+      allocate (flux_x_h(nx + 1, ny), flux_x_hu(nx + 1, ny), flux_x_hv(nx + 1, ny))
+      allocate (flux_y_h(nx, ny + 1), flux_y_hu(nx, ny + 1), flux_y_hv(nx, ny + 1))
       evolve_loop: block
          type(pic_timer_type) :: my_timer
          type(pic_timer_type) :: inner_timer
          real(dp) :: elapsed_time
          real(dp), parameter :: h_min = 1.0e-5_dp
          real(dp) :: before_mass, after_mass, initial_mass, final_mass
-         initial_mass = sum(state%water_height) * state%grid%dx * state%grid%dy
+         initial_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
          call global%info( &
-   pad("Step", 8)     // pad("Time", 12)      // pad("dt", 12)       // &
-   pad("Time/Step", 14) // pad("Mass", 12)     // pad("Net Flux", 12) // pad("ΔMass", 12))
+            pad("Step", 8)//pad("Time", 12)//pad("dt", 12)// &
+            pad("Time/Step", 14)//pad("Mass", 12)//pad("Net Flux", 12)//pad("ΔMass", 12))
 
          do while (t < t_end)
             if (mod(step, print_interval) == 0) then
                call my_timer%start()
-            endif
+            end if
             dt = compute_dt(state, cfl)
 
-            if(t + dt > t_end) dt = t_end - t
+            if (t + dt > t_end) dt = t_end - t
 
             call apply_reflective_boundaries(state)
 
             ! Compute fluxes
-            !call compute_rusanov_flux_x(state, flux_x_h, flux_x_hu, flux_x_hv)
-            !call compute_rusanov_flux_y(state, flux_y_h, flux_y_hu, flux_y_hv)
-            call compute_rusanov_fluxes_xy(state, flux_x_h, flux_x_hu, flux_x_hv, flux_y_h, flux_y_hu, flux_y_hv) 
+            call compute_rusanov_fluxes_xy(state, flux_x_h, flux_x_hu, flux_x_hv, flux_y_h, flux_y_hu, flux_y_hv)
 
             ! Update state
-            before_mass= sum(state%water_height) * state%grid%dx  * state%grid%dy
+            before_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
             call update_state_block(state, flux_x_h, flux_x_hu, flux_x_hv, &
-               flux_y_h, flux_y_hu, flux_y_hv, dt)
+                                    flux_y_h, flux_y_hu, flux_y_hv, dt)
             call enforce_min_height(state, h_min)
-            after_mass = sum(state%water_height) * state%grid%dx  * state%grid%dy
-
+            after_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
             ! Advance time
             t = t + dt
-
             step = step + 1
 
             if (mod(step, print_interval) == 0) then
@@ -179,41 +171,34 @@ end function round_dp
                   real(dp) :: total_mass
                   real(dp) :: total_mom_x, total_mom_y
                   real(dp) :: net_flux
-                  net_flux = sum(flux_x_h(nx+1,:)) - sum(flux_x_h(1,:)) + &
-                     sum(flux_y_h(:,ny+1)) - sum(flux_y_h(:,1))
-                  total_mass = sum(state%water_height) * state%grid%dx * state%grid%dy
-                  total_mom_x = sum(state%x_momentum) * state%grid%dx * state%grid%dy
-                  total_mom_y = sum(state%y_momentum) * state%grid%dx * state%grid%dy
+                  net_flux = sum(flux_x_h(nx + 1, :)) - sum(flux_x_h(1, :)) + &
+                             sum(flux_y_h(:, ny + 1)) - sum(flux_y_h(:, 1))
+                  total_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
+                  total_mom_x = sum(state%x_momentum)*state%grid%dx*state%grid%dy
+                  total_mom_y = sum(state%y_momentum)*state%grid%dx*state%grid%dy
 
-              !    call global%info("Step " // to_string(step) // " time " // to_string(t) // &
-              !       " dt " // to_string(dt) // " time per steps " // to_string(elapsed_time) // &
-              !       " mass " // to_string(total_mass) // &
-              !       " net flux " // to_string(net_flux) //  " Δmass " // to_string(after_mass - before_mass))
-              call global%info( &
-   pad(to_string(step), 8)        // " " // pad(to_string(round_dp(t,4)), 12) // " "   // &
-   pad(to_string(round_dp(dt,4)), 12)         // " " //  pad(to_string(round_dp(elapsed_time,4)), 14) // " " // &
-   pad(to_string(total_mass), 12) // " " // pad(to_string(round_dp(net_flux,4)), 12) // " "    // &
-   pad(to_string(round_dp((after_mass - before_mass),4)), 12))
-
+                  call global%info( &
+                     pad(to_string(step), 8)//" "//pad(to_string(round_dp(t, 4)), 12)//" "// &
+                     pad(to_string(round_dp(dt, 4)), 12)//" "//pad(to_string(round_dp(elapsed_time, 4)), 14)//" "// &
+                     pad(to_string(total_mass), 12)//" "//pad(to_string(round_dp(net_flux, 4)), 12)//" "// &
+                     pad(to_string(round_dp((after_mass - before_mass), 4)), 12))
 
                end block printing
 
                !call write_water_height_to_csv(state, step)
             end if
-
-            final_mass = sum(state%water_height) * state%grid%dx * state%grid%dy
-
+            final_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
          end do
 
-      call global%info("Final mass: " // to_string(final_mass) // &
-         ", Initial mass: " // to_string(initial_mass) // &
-         ", Δmass: " // to_string(final_mass - initial_mass) // & 
-         " Lost " // to_string( 100*(1 - (final_mass / initial_mass))) // " % of the initial mass")
+         call global%info("Final mass: "//to_string(final_mass)// &
+                          ", Initial mass: "//to_string(initial_mass)// &
+                          ", Δmass: "//to_string(final_mass - initial_mass)// &
+                          " Lost "//to_string(100*(1 - (final_mass/initial_mass)))//" % of the initial mass")
       end block evolve_loop
 
-      deallocate(flux_x_h, flux_x_hu, flux_x_hv)
-      deallocate(flux_y_h, flux_y_hu, flux_y_hv)
+      deallocate (flux_x_h, flux_x_hu, flux_x_hv)
+      deallocate (flux_y_h, flux_y_hu, flux_y_hv)
    end subroutine time_loop
 
 end module pic_shallow_water_driver

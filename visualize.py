@@ -27,4 +27,3 @@ def update(frame):
 
 ani = animation.FuncAnimation(fig, update, frames=len(csv_files), blit=True, interval=200)
 plt.show()
-
