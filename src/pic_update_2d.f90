@@ -102,7 +102,7 @@ subroutine enforce_min_height(state, h_min)
 
   nx = state%grid%nx
   ny = state%grid%ny
-
+  !$omp parallel do collapse(2) private(i,j) shared(h_min)
   do j = 1, ny
     do i = 1, nx
       if (state%water_height(i,j) < h_min) then
@@ -112,6 +112,7 @@ subroutine enforce_min_height(state, h_min)
       end if
     end do
   end do
+  !$omp end parallel do
 end subroutine enforce_min_height
 
 

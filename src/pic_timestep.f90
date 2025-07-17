@@ -21,7 +21,7 @@ module pic_timestep
 
     max_speed = 0.0_dp 
 
-    !do concurrent (j = 1:ny, i = 1:nx)
+    !$omp parallel do collapse(2) default(shared) private(i, j, h, u, v, a) reduction(max:max_speed)
     do j = 1, ny 
     do i = 1, nx
       h = state%water_height(i,j)
