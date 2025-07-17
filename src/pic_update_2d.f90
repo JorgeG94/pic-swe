@@ -1,5 +1,5 @@
 module pic_update_2d
-  use pic_types, only: default_int, dp
+  use pic_types, only: default_int, dp, sp
   use pic_state_2d, only: state_2d_type 
   use local_pic_constants, only: epsilon
   implicit none 

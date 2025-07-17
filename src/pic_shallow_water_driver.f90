@@ -1,5 +1,5 @@
 module pic_shallow_water_driver
-   use pic_types, only: default_int, dp
+   use pic_types, only: default_int, dp, sp
    use pic_state_2d, only: state_2d_type
    use pic_flux_2d, only: compute_rusanov_fluxes_xy
    use pic_update_2d, only: update_state, enforce_min_height, update_state_block
@@ -208,7 +208,8 @@ end function round_dp
 
       call global%info("Final mass: " // to_string(final_mass) // &
          ", Initial mass: " // to_string(initial_mass) // &
-         ", Δmass: " // to_string(final_mass - initial_mass))
+         ", Δmass: " // to_string(final_mass - initial_mass) // & 
+         " Lost " // to_string( 100*(1 - (final_mass / initial_mass))) // " % of the initial mass")
       end block evolve_loop
 
       deallocate(flux_x_h, flux_x_hu, flux_x_hv)

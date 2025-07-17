@@ -1,5 +1,5 @@
 module pic_state_2d
-use pic_types, only: default_int, dp
+use pic_types, only: default_int, dp, sp
 use pic_grid_2d
 implicit none 
 
@@ -51,9 +51,9 @@ type :: state_2d_type
 
     end subroutine initialize_state 
 
-subroutine initialize_dam_break(state, h_left, h_right, x_split)
+subroutine initialize_dam_break(state, h_left, h_right, x_dplit)
   type(state_2d_type), intent(inout) :: state
-  real(dp), intent(in) :: h_left, h_right, x_split
+  real(dp), intent(in) :: h_left, h_right, x_dplit
   integer(default_int) :: i, j
   type(grid_2d_type) :: grid
 
@@ -64,7 +64,7 @@ subroutine initialize_dam_break(state, h_left, h_right, x_split)
   !do concurrent (j = 1:grid%ny, i = 1:grid%nx)
   do j = 1, grid%ny
   do i = 1, grid%nx
-    if (grid%x(i) < x_split) then
+    if (grid%x(i) < x_dplit) then
       state%water_height(i,j) = h_left
     else
       state%water_height(i,j) = h_right

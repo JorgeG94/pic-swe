@@ -1,5 +1,5 @@
 module pic_grid_2d
-  use pic_types, only: default_int, dp
+  use pic_types, only: default_int, dp, sp
   implicit none 
 
   type :: grid_2d_type
