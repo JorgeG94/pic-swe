@@ -19,4 +19,4 @@ source-form = "free"
 
 [dependencies]
 pic = { git = "https://github.com/JorgeG94/pic.git", branch = "chore/noblas"}
-openmp="*"
+#openmp="*"
