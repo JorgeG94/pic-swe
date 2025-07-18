@@ -2,6 +2,7 @@ module pic_shallow_water_driver
    use pic_types, only: default_int, dp, sp
    use pic_state_2d, only: state_2d_type
    use pic_flux_2d, only: compute_rusanov_fluxes_xy
+   use pic_boundaries, only: apply_reflective_boundaries
    use pic_update_2d, only: update_state, enforce_min_height, update_state_block
    use pic_timestep, only: compute_dt
    use pic_timers
@@ -66,47 +67,6 @@ contains
       close (100)
    end subroutine write_water_height_to_csv
 
-   subroutine apply_reflective_boundaries(state)
-      type(state_2d_type), intent(inout) :: state
-      integer :: nx, ny
-      nx = state%grid%nx
-      ny = state%grid%ny
-
-      ! Reflective in X direction
-      state%water_height(1, :) = state%water_height(2, :)
-      state%water_height(nx, :) = state%water_height(nx - 1, :)
-      state%x_momentum(1, :) = -state%x_momentum(2, :)
-      state%x_momentum(nx, :) = -state%x_momentum(nx - 1, :)
-      state%y_momentum(1, :) = state%y_momentum(2, :)
-      state%y_momentum(nx, :) = state%y_momentum(nx - 1, :)
-
-      ! Reflective in Y direction
-      state%water_height(:, 1) = state%water_height(:, 2)
-      state%water_height(:, ny) = state%water_height(:, ny - 1)
-      state%x_momentum(:, 1) = state%x_momentum(:, 2)
-      state%x_momentum(:, ny) = state%x_momentum(:, ny - 1)
-      state%y_momentum(:, 1) = -state%y_momentum(:, 2)
-      state%y_momentum(:, ny) = -state%y_momentum(:, ny - 1)
-
-      ! Corner values (to avoid double overwrite)
-      state%water_height(1, 1) = state%water_height(2, 2)
-      state%x_momentum(1, 1) = -state%x_momentum(2, 2)
-      state%y_momentum(1, 1) = -state%y_momentum(2, 2)
-
-      state%water_height(1, ny) = state%water_height(2, ny - 1)
-      state%x_momentum(1, ny) = -state%x_momentum(2, ny - 1)
-      state%y_momentum(1, ny) = -state%y_momentum(2, ny - 1)
-
-      state%water_height(nx, 1) = state%water_height(nx - 1, 2)
-      state%x_momentum(nx, 1) = -state%x_momentum(nx - 1, 2)
-      state%y_momentum(nx, 1) = -state%y_momentum(nx - 1, 2)
-
-      state%water_height(nx, ny) = state%water_height(nx - 1, ny - 1)
-      state%x_momentum(nx, ny) = -state%x_momentum(nx - 1, ny - 1)
-      state%y_momentum(nx, ny) = -state%y_momentum(nx - 1, ny - 1)
-
-   end subroutine apply_reflective_boundaries
-
    subroutine time_loop(state, t_end, cfl)
 
       type(state_2d_type), intent(inout) :: state
@@ -149,6 +109,12 @@ contains
             call apply_reflective_boundaries(state)
 
             ! Compute fluxes
+            flux_x_h = 0.0_dp
+            flux_x_hu = 0.0_dp
+            flux_x_hv = 0.0_dp
+            flux_y_h = 0.0_dp
+            flux_y_hu = 0.0_dp
+            flux_y_hv = 0.0_dp
             call compute_rusanov_fluxes_xy(state, flux_x_h, flux_x_hu, flux_x_hv, flux_y_h, flux_y_hu, flux_y_hv)
 
             ! Update state

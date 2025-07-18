@@ -12,16 +12,16 @@ contains
       real(dp) :: dt
 
       integer(default_int) :: i, j, nx, ny
-      real(dp) :: dx, dy, h, u, v, a, max_dpeed
+      real(dp) :: dx, dy, h, u, v, a, max_speed
 
       nx = state%grid%nx
       ny = state%grid%ny
       dx = state%grid%dx
       dy = state%grid%dy
 
-      max_dpeed = 0.0_dp
+      max_speed = 0.0_dp
 
-      !$omp parallel do collapse(2) default(shared) private(i, j, h, u, v, a) reduction(max:max_dpeed)
+      !$omp parallel do collapse(2) default(shared) private(i, j, h, u, v, a) reduction(max:max_speed)
       do j = 1, ny
       do i = 1, nx
          h = state%water_height(i, j)
@@ -30,13 +30,13 @@ contains
             u = state%x_momentum(i, j)/h
             v = state%y_momentum(i, j)/h
             a = max(abs(u) + sqrt(gravity*h), abs(v) + sqrt(gravity*h))
-            max_dpeed = max(max_dpeed, a)
+            max_speed = max(max_speed, a)
          end if
       end do
       end do
 
-      if (max_dpeed > 0.0_dp) then
-         dt = cfl*min(dx, dy)/max_dpeed
+      if (max_speed > 0.0_dp) then
+         dt = cfl*min(dx, dy)/max_speed
       else
          dt = 1.0e-3_dp
       end if
