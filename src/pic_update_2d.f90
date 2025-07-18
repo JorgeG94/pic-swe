@@ -57,7 +57,8 @@ contains
       dy = state%grid%dy
 
 !    do concurrent (j = 1:ny, i = 1:nx)
-      !$omp parallel do private(height, x_mom, y_mom, i, j, i_loc, j_loc)
+      !$omp target teams distribute parallel do private(height, x_mom, y_mom, i, j, i_loc, j_loc) & 
+      !$omp map(from: state%water_height, state%x_momentum, state%y_momentum)
       do jj = 1, ny, by
          do ii = 1, nx, bx
             ! Compute flux updates into local buffer
@@ -91,7 +92,7 @@ contains
 
          end do
       end do
-      !$omp end parallel do
+      !$omp end target teams distribute parallel do
    end subroutine update_state_block
 
    subroutine enforce_min_height(state, h_min)

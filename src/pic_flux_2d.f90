@@ -6,17 +6,24 @@ module pic_flux_2d
 
 contains
 
-   subroutine compute_rusanov_fluxes_xy(state, flux_x_h, flux_x_hu, flux_x_hv, flux_y_h, flux_y_hu, flux_y_hv)
-      type(state_2d_type), intent(in) :: state
+   subroutine compute_rusanov_fluxes_xy(state, flux_x_h, flux_x_hu, flux_x_hv, flux_y_h, flux_y_hu, flux_y_hv, dt)
+      type(state_2d_type), intent(inout) :: state
       real(dp), allocatable, intent(out) :: flux_x_h(:, :), flux_x_hu(:, :), &
                                             flux_x_hv(:, :), flux_y_h(:, :), flux_y_hu(:, :), flux_y_hv(:, :)
 
+      real(dp), intent(in), optional :: dt 
       workspace: block
 
          integer(default_int) :: nx, ny
+      real(dp) :: dx, dy
 
-         nx = state%grid%nx
-         ny = state%grid%ny
+      nx = state%grid%nx
+      ny = state%grid%ny
+      dx = state%grid%dx
+      dy = state%grid%dy
+
+!    do concurrent (j = 1:ny, i = 1:nx)
+
 
          allocate (flux_x_h(nx + 1, ny), flux_x_hu(nx + 1, ny), flux_x_hv(nx + 1, ny))
          allocate (flux_y_h(nx, ny + 1), flux_y_hu(nx, ny + 1), flux_y_hv(nx, ny + 1))
@@ -31,7 +38,8 @@ contains
             integer(default_int), parameter :: bx = 32, by = 32
             real(dp), parameter :: sqroot_gravity = sqrt(gravity)
 
-!$omp parallel do collapse(2) private(i, j, ii, jj, h_L, h_R, hu_L, hu_R, hv_L, hv_R, u_L, u_R, v_L, v_R, flux_L, flux_R, flux, c_L, c_R, a_max)
+!$omp target teams distribute parallel do collapse(2) private(i, j, ii, jj, h_L, h_R, hu_L, hu_R, hv_L, hv_R, u_L, u_R, v_L, v_R, flux_L, flux_R, flux, c_L, c_R, a_max) &
+!$omp map(tofrom:state%water_height, state%x_momentum, state%y_momentum) 
             do jj = 1, ny - 1, by
                do ii = 1, nx - 1, bx
                   do j = jj, min(jj + by - 1, ny - 1)
@@ -99,13 +107,12 @@ contains
                   end do
                end do
             end do
-            !$omp end parallel do
+            !$omp end target teams distribute parallel do
 
 !            end do
 
 !            !$pragma omp end parallel do simd
 
-         end block flux_loop
 
          flux_y_h(:, 1) = 0.0_dp; flux_y_h(:, ny + 1) = 0.0_dp
          flux_y_hu(:, 1) = 0.0_dp; flux_y_hu(:, ny + 1) = 0.0_dp
@@ -115,10 +122,57 @@ contains
          flux_x_hu(1, :) = 0.0_dp; flux_x_hu(nx + 1, :) = 0.0_dp
          flux_x_hv(1, :) = 0.0_dp; flux_x_hv(nx + 1, :) = 0.0_dp
 
+         end block flux_loop
+  
+  block 
+      integer, parameter :: bx = 32, by = 32
+      integer :: i,j, ii, jj, i_loc, j_loc
+      real(dp) :: height(bx, by), x_mom(bx, by), y_mom(bx, by)
+
+      !$omp target teams distribute parallel do private(height, x_mom, y_mom, i, j, i_loc, j_loc) & 
+      !$omp map(tofrom: state%water_height, state%x_momentum, state%y_momentum)
+      do jj = 1, ny, by
+         do ii = 1, nx, bx
+            ! Compute flux updates into local buffer
+            do j_loc = 1, min(by, ny - jj + 1)
+               j = jj + j_loc - 1
+               do i_loc = 1, min(bx, nx - ii + 1)
+                  i = ii + i_loc - 1
+
+                  height(i_loc, j_loc) = -dt/dx*(flux_x_h(i + 1, j) - flux_x_h(i, j)) &
+                                         - dt/dy*(flux_y_h(i, j + 1) - flux_y_h(i, j))
+
+                  x_mom(i_loc, j_loc) = -dt/dx*(flux_x_hu(i + 1, j) - flux_x_hu(i, j)) &
+                                        - dt/dy*(flux_y_hu(i, j + 1) - flux_y_hu(i, j))
+
+                  y_mom(i_loc, j_loc) = -dt/dx*(flux_x_hv(i + 1, j) - flux_x_hv(i, j)) &
+                                        - dt/dy*(flux_y_hv(i, j + 1) - flux_y_hv(i, j))
+               end do
+            end do
+
+            ! Write once per cell from local buffers
+            do j_loc = 1, min(by, ny - jj + 1)
+               j = jj + j_loc - 1
+               do i_loc = 1, min(bx, nx - ii + 1)
+                  i = ii + i_loc - 1
+
+                  state%water_height(i, j) = state%water_height(i, j) + height(i_loc, j_loc)
+                  state%x_momentum(i, j) = state%x_momentum(i, j) + x_mom(i_loc, j_loc)
+                  state%y_momentum(i, j) = state%y_momentum(i, j) + y_mom(i_loc, j_loc)
+               end do
+            end do
+
+         end do
+      end do
+      !$omp end target teams distribute parallel do
+      end block
+
+
       end block workspace
    contains
 
       pure subroutine compute_velocity(h, hu, hv, u, v)
+      !$omp declare target
          real(dp), intent(inout) :: h
          real(dp), intent(in)    :: hu, hv
          real(dp), intent(out)   :: u, v

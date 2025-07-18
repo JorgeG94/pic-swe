@@ -114,13 +114,13 @@ contains
             flux_x_hv = 0.0_dp
             flux_y_h = 0.0_dp
             flux_y_hu = 0.0_dp
+            before_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
             flux_y_hv = 0.0_dp
-            call compute_rusanov_fluxes_xy(state, flux_x_h, flux_x_hu, flux_x_hv, flux_y_h, flux_y_hu, flux_y_hv)
+            call compute_rusanov_fluxes_xy(state, flux_x_h, flux_x_hu, flux_x_hv, flux_y_h, flux_y_hu, flux_y_hv, dt)
 
             ! Update state
-            before_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
-            call update_state_block(state, flux_x_h, flux_x_hu, flux_x_hv, &
-                                    flux_y_h, flux_y_hu, flux_y_hv, dt)
+!            call update_state_block(state, flux_x_h, flux_x_hu, flux_x_hv, &
+!                                    flux_y_h, flux_y_hu, flux_y_hv, dt)
             call enforce_min_height(state, h_min)
             after_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
@@ -151,7 +151,7 @@ contains
 
                end block printing
 
-               call write_water_height_to_csv(state, step)
+!               call write_water_height_to_csv(state, step)
             end if
             final_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
