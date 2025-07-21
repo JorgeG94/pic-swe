@@ -3,7 +3,7 @@ module pic_shallow_water_driver
    use pic_state_2d, only: state_2d_type
    use pic_flux_2d, only: compute_rusanov_fluxes_xy, flux_type
    use pic_boundaries, only: apply_reflective_boundaries
-   use pic_update_2d, only: update_state, enforce_min_height, update_state_block
+   use pic_update_2d, only: enforce_min_height, update_state_block
    use pic_timestep, only: compute_dt
    use pic_timers
    use pic_logger, only: global => global_logger
