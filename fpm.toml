@@ -20,4 +20,4 @@ source-form = "free"
 [dependencies]
 pic = { git = "https://github.com/JorgeG94/pic.git", branch = "chore/noblas"}
 test-drive.git = "https://github.com/fortran-lang/test-drive"
-#openmp="*"
+openmp="*"

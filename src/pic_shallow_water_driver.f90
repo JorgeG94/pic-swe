@@ -1,9 +1,9 @@
 module pic_shallow_water_driver
    use pic_types, only: default_int, dp, sp
    use pic_state_2d, only: state_2d_type
-   use pic_flux_2d, only: compute_rusanov_fluxes_xy
+   use pic_flux_2d, only: compute_rusanov_fluxes_xy, flux_type
    use pic_boundaries, only: apply_reflective_boundaries
-   use pic_update_2d, only: update_state, enforce_min_height, update_state_block
+   use pic_update_2d, only: enforce_min_height, update_state_block
    use pic_timestep, only: compute_dt
    use pic_timers
    use pic_logger, only: global => global_logger
@@ -71,6 +71,7 @@ contains
 
       type(state_2d_type), intent(inout) :: state
       real(dp), intent(in) :: t_end, cfl
+      type(flux_type) :: flux_x, flux_y 
       integer(default_int) :: nx, ny
 
       real(dp) :: dt, t
@@ -85,8 +86,11 @@ contains
       nx = state%grid%nx
       ny = state%grid%ny
 
-      allocate (flux_x_h(nx + 1, ny), flux_x_hu(nx + 1, ny), flux_x_hv(nx + 1, ny))
-      allocate (flux_y_h(nx, ny + 1), flux_y_hu(nx, ny + 1), flux_y_hv(nx, ny + 1))
+      call flux_x%allocate_fluxes(nx+1, ny) 
+      call flux_y%allocate_fluxes(nx, ny+1) 
+
+      !allocate (flux_x_h(nx + 1, ny), flux_x_hu(nx + 1, ny), flux_x_hv(nx + 1, ny))
+      !allocate (flux_y_h(nx, ny + 1), flux_y_hu(nx, ny + 1), flux_y_hv(nx, ny + 1))
       evolve_loop: block
          type(pic_timer_type) :: my_timer
          type(pic_timer_type) :: inner_timer
@@ -109,18 +113,22 @@ contains
             call apply_reflective_boundaries(state)
 
             ! Compute fluxes
-            flux_x_h = 0.0_dp
-            flux_x_hu = 0.0_dp
-            flux_x_hv = 0.0_dp
-            flux_y_h = 0.0_dp
-            flux_y_hu = 0.0_dp
-            flux_y_hv = 0.0_dp
-            call compute_rusanov_fluxes_xy(state, flux_x_h, flux_x_hu, flux_x_hv, flux_y_h, flux_y_hu, flux_y_hv)
+            !flux_x_h = 0.0_dp
+            !flux_x_hu = 0.0_dp
+            !flux_x_hv = 0.0_dp
+            !flux_y_h = 0.0_dp
+            !flux_y_hu = 0.0_dp
+            !flux_y_hv = 0.0_dp
+            call flux_x%set_fluxes(0.0_dp)
+            call flux_y%set_fluxes(0.0_dp)
+            !call compute_rusanov_fluxes_xy(state, flux_x_h, flux_x_hu, flux_x_hv, flux_y_h, flux_y_hu, flux_y_hv)
+            call compute_rusanov_fluxes_xy(state, flux_x, flux_y)
 
             ! Update state
             before_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
-            call update_state_block(state, flux_x_h, flux_x_hu, flux_x_hv, &
-                                    flux_y_h, flux_y_hu, flux_y_hv, dt)
+            call update_state_block(state, flux_x, flux_y, dt)
+            ! call update_state_block(state, flux_x_h, flux_x_hu, flux_x_hv, &
+            !                         flux_y_h, flux_y_hu, flux_y_hv, dt)
             call enforce_min_height(state, h_min)
             after_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
@@ -137,8 +145,8 @@ contains
                   real(dp) :: total_mass
                   real(dp) :: total_mom_x, total_mom_y
                   real(dp) :: net_flux
-                  net_flux = sum(flux_x_h(nx + 1, :)) - sum(flux_x_h(1, :)) + &
-                             sum(flux_y_h(:, ny + 1)) - sum(flux_y_h(:, 1))
+                  net_flux = sum(flux_x%flux_h(nx + 1, :)) - sum(flux_x%flux_h(1, :)) + &
+                             sum(flux_y%flux_h(:, ny + 1)) - sum(flux_y%flux_h(:, 1))
                   total_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
                   total_mom_x = sum(state%x_momentum)*state%grid%dx*state%grid%dy
                   total_mom_y = sum(state%y_momentum)*state%grid%dx*state%grid%dy
@@ -163,8 +171,10 @@ contains
                           " Lost "//to_string(100*(1 - (final_mass/initial_mass)))//" % of the initial mass")
       end block evolve_loop
 
-      deallocate (flux_x_h, flux_x_hu, flux_x_hv)
-      deallocate (flux_y_h, flux_y_hu, flux_y_hv)
+      call flux_x%deallocate_fluxes()
+      call flux_y%deallocate_fluxes()
+      ! deallocate (flux_x_h, flux_x_hu, flux_x_hv)
+      ! deallocate (flux_y_h, flux_y_hu, flux_y_hv)
    end subroutine time_loop
 
 end module pic_shallow_water_driver
