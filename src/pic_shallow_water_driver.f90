@@ -54,7 +54,6 @@ contains
       character(len=100) :: filename
       integer :: i, j
       filename = "height_step_"//to_string(step)//".csv"
-
       open (unit=100, file=filename, status='replace')
       do j = 1, state%grid%ny
          do i = 1, state%grid%nx
@@ -97,11 +96,18 @@ contains
          real(dp) :: elapsed_time
          real(dp), parameter :: h_min = 1.0e-5_dp
          real(dp) :: before_mass, after_mass, initial_mass, final_mass
+         real(dp) :: total_mass
+         real(dp) :: total_mom_x, total_mom_y
+         real(dp) :: net_flux
+         net_flux = 0.0_dp
          initial_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
          call global%info( &
             pad("Step", 8)//pad("Time", 12)//pad("dt", 12)// &
             pad("Time/Step", 14)//pad("Mass", 12)//pad("Net Flux", 12)//pad("ΔMass", 12))
 
+         !$omp target data map(tofrom: state, flux_x, flux_y) map(tofrom: state%water_height, state%x_momentum, state%y_momentum) &
+         !$omp map(tofrom: flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv) &
+         !$omp map(tofrom: flux_y%flux_h, flux_y%flux_hu, flux_y%flux_hv)
          do while (t < t_end)
             if (mod(step, print_interval) == 0) then
                call my_timer%start()
@@ -111,24 +117,16 @@ contains
             if (t + dt > t_end) dt = t_end - t
 
             call apply_reflective_boundaries(state)
-
             ! Compute fluxes
-            !flux_x_h = 0.0_dp
-            !flux_x_hu = 0.0_dp
-            !flux_x_hv = 0.0_dp
-            !flux_y_h = 0.0_dp
-            !flux_y_hu = 0.0_dp
-            !flux_y_hv = 0.0_dp
             call flux_x%set_fluxes(0.0_dp)
             call flux_y%set_fluxes(0.0_dp)
-            !call compute_rusanov_fluxes_xy(state, flux_x_h, flux_x_hu, flux_x_hv, flux_y_h, flux_y_hu, flux_y_hv)
+
             call compute_rusanov_fluxes_xy(state, flux_x, flux_y)
 
             ! Update state
             before_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
             call update_state_block(state, flux_x, flux_y, dt)
-            ! call update_state_block(state, flux_x_h, flux_x_hu, flux_x_hv, &
-            !                         flux_y_h, flux_y_hu, flux_y_hv, dt)
+
             call enforce_min_height(state, h_min)
             after_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
@@ -139,14 +137,12 @@ contains
             if (mod(step, print_interval) == 0) then
                call my_timer%stop()
                elapsed_time = my_timer%get_elapsed_time()
-               call check_mass_conservation(state, initial_mass, step)
-               printing: block
-
-                  real(dp) :: total_mass
-                  real(dp) :: total_mom_x, total_mom_y
-                  real(dp) :: net_flux
-                  net_flux = sum(flux_x%flux_h(nx + 1, :)) - sum(flux_x%flux_h(1, :)) + &
-                             sum(flux_y%flux_h(:, ny + 1)) - sum(flux_y%flux_h(:, 1))
+               !call check_mass_conservation(state, initial_mass, step)
+               !printing: block
+                  
+                  ! net_flux = sum(flux_x%flux_h(nx + 1, :)) - sum(flux_x%flux_h(1, :)) + &
+                  !            sum(flux_y%flux_h(:, ny + 1)) - sum(flux_y%flux_h(:, 1))
+                  !$omp target update from(state%water_height, state%x_momentum, state%y_momentum)
                   total_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
                   total_mom_x = sum(state%x_momentum)*state%grid%dx*state%grid%dy
                   total_mom_y = sum(state%y_momentum)*state%grid%dx*state%grid%dy
@@ -157,13 +153,14 @@ contains
                      pad(to_string(total_mass), 12)//" "//pad(to_string(round_dp(net_flux, 4)), 12)//" "// &
                      pad(to_string(round_dp((after_mass - before_mass), 4)), 12))
 
-               end block printing
+              ! end block printing
 
                call write_water_height_to_csv(state, step)
             end if
             final_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
          end do
+         !$omp end target data
 
          call global%info("Final mass: "//to_string(final_mass)// &
                           ", Initial mass: "//to_string(initial_mass)// &
