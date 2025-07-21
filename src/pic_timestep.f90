@@ -21,7 +21,7 @@ contains
 
       max_speed = 0.0_dp
 
-      !$omp parallel do collapse(2) default(shared) private(i, j, h, u, v, a) reduction(max:max_speed)
+      !$omp target teams distribute parallel do collapse(2) default(shared) private(i, j, h, u, v, a) reduction(max:max_speed)
       do j = 1, ny
       do i = 1, nx
          h = state%water_height(i, j)
@@ -34,6 +34,7 @@ contains
          end if
       end do
       end do
+      !$omp end target teams distribute parallel do
 
       if (max_speed > 0.0_dp) then
          dt = cfl*min(dx, dy)/max_speed

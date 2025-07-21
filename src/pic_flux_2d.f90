@@ -30,27 +30,39 @@ contains
 
   end subroutine allocate_fluxes
 
-  subroutine set_fluxes(fluxes, a)
+  subroutine set_fluxes(fluxes, a, threaded)
     class(flux_type), intent(inout) :: fluxes 
     real(dp), intent(in) :: a 
-    !integer(int64) :: nx, ny
-    !integer(int64) :: i, j
+    logical, intent(in), optional :: threaded
+    logical :: use_omp
+    integer(int64) :: nx, ny
+    integer(int64) :: i, j
 
+    if(present(threaded)) then 
+      use_omp = threaded
+    else
+      use_omp = .false.
+    end if
+
+    if(use_omp) then 
+    ! in theory this could be good for the GPU
+    nx = size(fluxes%flux_h,1)
+    ny = size(fluxes%flux_h,2)
+    !$omp target teams distribute parallel do collapse(2) private(i,j) default(shared)
+    do i = 1, nx
+      do j = 1, ny 
+        fluxes%flux_h(i,j) = a
+        fluxes%flux_hu(i,j) = a
+        fluxes%flux_hv(i,j) = a
+      end do 
+    end do 
+    !$omp end target teams distribute parallel do
+    else 
     fluxes%flux_h = a
     fluxes%flux_hu = a
     fluxes%flux_hv = a
-    ! in theory this could be good for the GPU
-    !nx = size(fluxes%flux_h,1)
-    !ny = size(fluxes%flux_h,2)
-    !!$omp parallel do collapse(2)
-    !do i = 1, nx
-    !  do j = 1, ny 
-    !    fluxes%flux_h(i,j) = a
-    !    fluxes%flux_hu(i,j) = a
-    !    fluxes%flux_hv(i,j) = a
-    !  end do 
-    !end do 
-    !!$omp end parallel do
+    endif 
+
 
   end subroutine set_fluxes
 
@@ -89,7 +101,7 @@ contains
             integer(default_int), parameter :: bx = 32, by = 32
             real(dp), parameter :: sqroot_gravity = sqrt(gravity)
 
-!$omp parallel do collapse(2) private(i, j, ii, jj, h_L, h_R, hu_L, hu_R, hv_L, hv_R, u_L, u_R, v_L, v_R, flux_L, flux_R, flux, c_L, c_R, a_max)
+!$omp target teams distribute parallel do collapse(2) private(i, j, ii, jj, h_L, h_R, hu_L, hu_R, hv_L, hv_R, u_L, u_R, v_L, v_R, flux_L, flux_R, flux, c_L, c_R, a_max)
             do jj = 1, ny - 1, by
                do ii = 1, nx - 1, bx
                   do j = jj, min(jj + by - 1, ny - 1)
@@ -157,7 +169,7 @@ contains
                   end do
                end do
             end do
-            !$omp end parallel do
+            !$omp end target teams distribute parallel do
 
 !            end do
 
