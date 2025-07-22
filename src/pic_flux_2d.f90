@@ -108,7 +108,7 @@ contains
 
 !$omp target teams distribute parallel do collapse(2) &
 !$omp private(i, j, ii, jj, h_L, h_R, hu_L, hu_R, hv_L, hv_R, u_L, u_R, v_L, v_R, flux_L, flux_R, flux, c_L, c_R, a_max) &
-!$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum) &
+!$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum) 
 !$omp map(tofrom: flux_x, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv) &
 !$omp map(tofrom: flux_y, flux_y%flux_h, flux_y%flux_hu, flux_y%flux_hv)
             do jj = 1, ny - 1, by

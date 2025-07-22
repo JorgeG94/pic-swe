@@ -108,10 +108,15 @@ contains
          call global%info( &
             pad("Step", 8)//pad("Time", 12)//pad("dt", 12)// &
             pad("Time/Step", 14)//pad("Mass", 12)//pad("Net Flux", 12)//pad("ΔMass", 12))
+! in theory I don't need to transfer the fluxes, I should be able to malloc them straight on the GPU without needing to do this
+! transfer. However, I do need to transfer them in the case I am reading from a previous run, whcih I should support
+         !!$omp map(to: flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv) &
+         !!$omp map(to: flux_y%flux_h, flux_y%flux_hu, flux_y%flux_hv)
+         !$omp target enter data map(alloc: flux_x, flux_y, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv, flux_y%flux_h, flux_y%flux_hu,flux_y%flux_hv)
 
-         !$omp target data map(tofrom: state, flux_x, flux_y) map(tofrom: state%water_height, state%x_momentum, state%y_momentum) &
-         !$omp map(to: flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv) &
-         !$omp map(to: flux_y%flux_h, flux_y%flux_hu, flux_y%flux_hv)
+         !$omp target data map(tofrom: state) map(tofrom: state%water_height, state%x_momentum, state%y_momentum)
+         call flux_x%set_fluxes(0.0_dp, .true.)
+         call flux_y%set_fluxes(0.0_dp, .true.)
          do while (t < t_end)
             if (mod(step, print_interval) == 0) then
                call my_timer%start()
@@ -122,16 +127,16 @@ contains
 
             call apply_reflective_boundaries(state)
             ! Compute fluxes
-            !call flux_x%set_fluxes(0.0_dp, .true.)
-            !call flux_y%set_fluxes(0.0_dp, .true.)
 
             call compute_rusanov_fluxes_xy(state, flux_x, flux_y)
 
             ! Update state
+            ! do with function
             !before_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
             call update_state_block(state, flux_x, flux_y, dt)
 
             call enforce_min_height(state, h_min)
+            ! do with function
             !after_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
             ! Advance time
@@ -147,6 +152,7 @@ contains
                   ! net_flux = sum(flux_x%flux_h(nx + 1, :)) - sum(flux_x%flux_h(1, :)) + &
                   !            sum(flux_y%flux_h(:, ny + 1)) - sum(flux_y%flux_h(:, 1))
                   !!$omp target update from(state%water_height, state%x_momentum, state%y_momentum)
+                  ! these should all be a function
                   total_mass = 0.0_dp
                   total_mom_x = 0.0_dp
                   total_mom_y = 0.0_dp
@@ -186,6 +192,7 @@ contains
 
          end do
          !$omp end target data
+         !$omp target exit data map(release: flux_x, flux_y, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv, flux_y%flux_h, flux_y%flux_hu,flux_y%flux_hv)
           final_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
          call global%info("Final mass: "//to_string(final_mass)// &
