@@ -106,7 +106,7 @@ contains
             flux_R = 0.0_dp  
             flux = 0.0_dp
 
-!$omp target teams distribute parallel do collapse(2) &
+!$omp target teams loop collapse(2) bind(teams) num_teams(2048) thread_limit(128) &
 !$omp private(i, j, ii, jj, h_L, h_R, hu_L, hu_R, hv_L, hv_R, u_L, u_R, v_L, v_R, flux_L, flux_R, flux, c_L, c_R, a_max) &
 !$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum)& 
 !$omp map(tofrom: flux_x, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv) &
@@ -122,8 +122,25 @@ contains
                         hu_R = state%x_momentum(i + 1, j)
                         hv_R = state%y_momentum(i + 1, j)
                         ! this can be a subroutine
-                        call compute_velocity(h_L, hu_L, hv_L, u_L, v_L)
-                        call compute_velocity(h_R, hu_R, hv_R, u_R, v_R)
+                        !call compute_velocity(h_L, hu_L, hv_L, u_L, v_L)
+                        !call compute_velocity(h_R, hu_R, hv_R, u_R, v_R)
+
+                        if (h_L < epsilon) h_L = epsilon
+                        if (h_L > epsilon) then
+                          u_L = hu_L/h_L
+                          v_L = hv_L/h_L
+                        else
+                          u_L = 0.0_dp
+                          v_L = 0.0_dp
+                        end if
+                        if (h_R < epsilon) h_R = epsilon
+                        if (h_R > epsilon) then
+                          u_R = hu_R/h_R
+                          v_R = hv_R/h_R
+                        else
+                          u_R = 0.0_dp
+                          v_R = 0.0_dp
+                        end if
 
                         flux_L(1) = hu_L
                         flux_L(2) = hu_L*u_L + 0.5_dp*gravity*h_L**2
@@ -158,8 +175,25 @@ contains
                         hu_R = state%x_momentum(i, j + 1)
                         hv_R = state%y_momentum(i, j + 1)
                         ! this can be a subroutine
-                        call compute_velocity(h_L, hu_L, hv_L, u_L, v_L)
-                        call compute_velocity(h_R, hu_R, hv_R, u_R, v_R)
+                        !call compute_velocity(h_L, hu_L, hv_L, u_L, v_L)
+                        !call compute_velocity(h_R, hu_R, hv_R, u_R, v_R)
+                        if (h_L < epsilon) h_L = epsilon
+                        if (h_L > epsilon) then
+                          u_L = hu_L/h_L
+                          v_L = hv_L/h_L
+                        else
+                          u_L = 0.0_dp
+                          v_L = 0.0_dp
+                        end if
+                        if (h_R < epsilon) h_R = epsilon
+                        if (h_R > epsilon) then
+                          u_R = hu_R/h_R
+                          v_R = hv_R/h_R
+                        else
+                          u_R = 0.0_dp
+                          v_R = 0.0_dp
+                        end if
+
 
                         ! flux_L = [hu_L, hu_L*u_L + 0.5_dp*gravity*h_L**2, hu_L*v_L]
                         ! flux_R = [hu_R, hu_R*u_R + 0.5_dp*gravity*h_R**2, hu_R*v_R]
@@ -193,7 +227,7 @@ contains
                   end do
                end do
             end do
-            !$omp end target teams distribute parallel do
+            !$omp end target teams loop
 
 !            end do
 
