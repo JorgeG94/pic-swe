@@ -21,7 +21,7 @@ m = size(array,1)
 
 res = 0.0_dp
 !$omp target teams distribute parallel do private(i) default(shared) collapse(1)&
-!$omp map(to:array) map(from:res) reduction(+:res) 
+!$omp map(to:array) map(tofrom:res) reduction(+:res) 
 do i = 1, m 
  res = res + array(i)
 end do 
@@ -30,7 +30,7 @@ end do
 end function sum_1d 
 
 function sum_2d(array) result(res) 
-!!$omp declare target
+!$omp declare target
 real(dp),  intent(in) :: array(:,:)
 real(dp) :: res 
 integer :: i, j 
@@ -40,13 +40,14 @@ n_cols = size(array, 1)
 n_rows = size(array, 2)
 res = 0.0_dp
 !$omp target teams distribute parallel do private(i,j) reduction(+:res) collapse(2) &
-!$omp map(to:array) map(from:res)
+!$omp map(to:array) map(tofrom:res)
 do i = 1, n_cols
   do j = 1, n_rows 
     res = res + array(i,j)
   end do 
 end do 
 !$omp end target teams distribute parallel do
+
 
 end function sum_2d
 
