@@ -21,7 +21,7 @@ m = size(array,1)
 
 res = 0.0_dp
 !$omp target teams distribute parallel do private(i) default(shared) collapse(1)&
-!$omp map(to:array) from(res) reduction(+:res) 
+!$omp map(to:array) map(from:res) reduction(+:res) 
 do i = 1, m 
  res = res + array(i)
 end do 
