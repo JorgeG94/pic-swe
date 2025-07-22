@@ -32,7 +32,7 @@ program main
       real(dp), parameter :: h_right = 7.0_dp
       real(dp), parameter :: x_dplit = 250.0_dp
 
-      t_end = 5.0_dp
+      t_end = 2.0_dp
       cfl = 0.45_dp
       call my_timer%start()
       call init_grid(grid, xmin, xmax, ymin, ymax, dx)

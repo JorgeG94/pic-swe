@@ -142,10 +142,12 @@ contains
                   
                   ! net_flux = sum(flux_x%flux_h(nx + 1, :)) - sum(flux_x%flux_h(1, :)) + &
                   !            sum(flux_y%flux_h(:, ny + 1)) - sum(flux_y%flux_h(:, 1))
-                  !$omp target update from(state%water_height, state%x_momentum, state%y_momentum)
+                  !!$omp target update from(state%water_height, state%x_momentum, state%y_momentum)
+                  !$omp target map(tofrom: total_mass, total_mom_x, total_mom_y) 
                   total_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
                   total_mom_x = sum(state%x_momentum)*state%grid%dx*state%grid%dy
                   total_mom_y = sum(state%y_momentum)*state%grid%dx*state%grid%dy
+                  !$omp end target
 
                   call global%info( &
                      pad(to_string(step), 8)//" "//pad(to_string(round_dp(t, 4)), 12)//" "// &
@@ -155,7 +157,7 @@ contains
 
               ! end block printing
 
-               call write_water_height_to_csv(state, step)
+               !call write_water_height_to_csv(state, step)
             end if
             final_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
