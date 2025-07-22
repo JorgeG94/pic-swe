@@ -29,7 +29,7 @@ contains
 
 !!$omp parallel do private(height, x_mom, y_mom, i, j, i_loc, j_loc)
 
-!$omp target teams distribute parallel do simd private(height, x_mom, y_mom, i, j, i_loc, j_loc) &
+!$omp target teams distribute parallel do simd collapse(2) private(height, x_mom, y_mom, i, j, i_loc, j_loc) &
 !$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum) &
 !$omp map(tofrom: flux_x, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv) &
 !$omp map(tofrom: flux_y, flux_y%flux_h, flux_y%flux_hu, flux_y%flux_hv)
