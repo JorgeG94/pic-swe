@@ -1,5 +1,6 @@
 module pic_shallow_water_driver
    use pic_types, only: default_int, dp, sp
+   use pic_gpu_utils, only: dasum
    use pic_state_2d, only: state_2d_type
    use pic_flux_2d, only: compute_rusanov_fluxes_xy, flux_type
    use pic_boundaries, only: apply_reflective_boundaries
@@ -99,15 +100,18 @@ contains
          real(dp) :: total_mass
          real(dp) :: total_mom_x, total_mom_y
          real(dp) :: net_flux
+         integer :: i,j 
          net_flux = 0.0_dp
+         before_mass = 0.0_dp
+         after_mass = 0.0_dp
          initial_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
          call global%info( &
             pad("Step", 8)//pad("Time", 12)//pad("dt", 12)// &
             pad("Time/Step", 14)//pad("Mass", 12)//pad("Net Flux", 12)//pad("ΔMass", 12))
 
          !$omp target data map(tofrom: state, flux_x, flux_y) map(tofrom: state%water_height, state%x_momentum, state%y_momentum) &
-         !$omp map(tofrom: flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv) &
-         !$omp map(tofrom: flux_y%flux_h, flux_y%flux_hu, flux_y%flux_hv)
+         !$omp map(to: flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv) &
+         !$omp map(to: flux_y%flux_h, flux_y%flux_hu, flux_y%flux_hv)
          do while (t < t_end)
             if (mod(step, print_interval) == 0) then
                call my_timer%start()
@@ -118,17 +122,17 @@ contains
 
             call apply_reflective_boundaries(state)
             ! Compute fluxes
-            call flux_x%set_fluxes(0.0_dp)
-            call flux_y%set_fluxes(0.0_dp)
+            !call flux_x%set_fluxes(0.0_dp, .true.)
+            !call flux_y%set_fluxes(0.0_dp, .true.)
 
             call compute_rusanov_fluxes_xy(state, flux_x, flux_y)
 
             ! Update state
-            before_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
+            !before_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
             call update_state_block(state, flux_x, flux_y, dt)
 
             call enforce_min_height(state, h_min)
-            after_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
+            !after_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
             ! Advance time
             t = t + dt
@@ -143,11 +147,31 @@ contains
                   ! net_flux = sum(flux_x%flux_h(nx + 1, :)) - sum(flux_x%flux_h(1, :)) + &
                   !            sum(flux_y%flux_h(:, ny + 1)) - sum(flux_y%flux_h(:, 1))
                   !!$omp target update from(state%water_height, state%x_momentum, state%y_momentum)
-                  !$omp target map(tofrom: total_mass, total_mom_x, total_mom_y) 
-                  total_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
-                  total_mom_x = sum(state%x_momentum)*state%grid%dx*state%grid%dy
-                  total_mom_y = sum(state%y_momentum)*state%grid%dx*state%grid%dy
-                  !$omp end target
+                  total_mass = 0.0_dp
+                  total_mom_x = 0.0_dp
+                  total_mom_y = 0.0_dp
+                  !$omp target teams distribute parallel do simd private(i,j) collapse(2) reduction(+: total_mass,total_mom_x,total_mom_y) map(tofrom:total_mass, total_mom_y, total_mom_x)
+                  do i = 1, state%grid%nx  
+                    do j = 1, state%grid%ny 
+                      total_mass = total_mass + state%water_height(i,j)
+                      total_mom_x = total_mom_x + state%x_momentum(i,j)
+                      total_mom_y = total_mom_y + state%y_momentum(i,j)
+                    end do 
+                  end do 
+                  !$omp end target teams distribute parallel do simd
+                  total_mass = total_mass*state%grid%dx*state%grid%dy
+                  total_mom_x = total_mom_x*state%grid%dx*state%grid%dy
+                  total_mom_y = total_mom_y*state%grid%dx*state%grid%dy
+                  !total_mass = dasum(state%water_height)*state%grid%dx*state%grid%dy 
+                  !total_mom_x = dasum(state%x_momentum)*state%grid%dx*state%grid%dy
+                  !total_mom_y = dasum(state%y_momentum)*state%grid%dx*state%grid%dy
+
+                  !!$omp target map(tofrom: total_mass, total_mom_x, total_mom_y) 
+                  !total_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
+                  !total_mom_x = sum(state%x_momentum)*state%grid%dx*state%grid%dy
+                  !total_mom_y = sum(state%y_momentum)*state%grid%dx*state%grid%dy
+                  !!$omp end target
+                  !!$omp target update from(total_mass, total_mom_x, total_mom_y)
 
                   call global%info( &
                      pad(to_string(step), 8)//" "//pad(to_string(round_dp(t, 4)), 12)//" "// &
@@ -159,10 +183,10 @@ contains
 
                !call write_water_height_to_csv(state, step)
             end if
-            final_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
          end do
          !$omp end target data
+          final_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
          call global%info("Final mass: "//to_string(final_mass)// &
                           ", Initial mass: "//to_string(initial_mass)// &

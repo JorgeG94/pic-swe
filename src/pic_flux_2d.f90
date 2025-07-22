@@ -48,7 +48,7 @@ contains
      ! in theory this could be good for the GPU
      nx = size(fluxes%flux_h,1)
      ny = size(fluxes%flux_h,2)
-     !$omp target teams distribute parallel do collapse(2) private(i,j) default(shared) & 
+     !$omp target teams distribute parallel do simd collapse(2) private(i,j) default(shared) & 
      !$omp map(to:fluxes, fluxes%flux_h, fluxes%flux_hu, fluxes%flux_hv)
      do i = 1, nx
        do j = 1, ny 
@@ -57,7 +57,7 @@ contains
          fluxes%flux_hv(i,j) = a
        end do 
      end do 
-     !$omp end target teams distribute parallel do
+     !$omp end target teams distribute parallel do simd
      else 
     fluxes%flux_h = a
     fluxes%flux_hu = a

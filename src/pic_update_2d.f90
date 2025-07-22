@@ -76,7 +76,8 @@ contains
 
       nx = state%grid%nx
       ny = state%grid%ny
-      !$omp parallel do collapse(2) private(i,j) shared(h_min)
+      !$omp target teams distribute parallel do simd collapse(2) private(i,j) shared(h_min) &
+      !$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum)
       do j = 1, ny
          do i = 1, nx
             if (state%water_height(i, j) < h_min) then
@@ -86,7 +87,7 @@ contains
             end if
          end do
       end do
-      !$omp end parallel do
+      !$omp end target teams distribute parallel do simd
    end subroutine enforce_min_height
 
 end module pic_update_2d
