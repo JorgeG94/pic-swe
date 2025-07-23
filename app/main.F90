@@ -19,9 +19,9 @@ program main
 
    xmin = zero
    ymin = zero
-   xmax = 1000_dp
-   ymax = 750_dp
-   dx = 1.0_dp
+   xmax = 500_dp
+   ymax = 500_dp
+   dx = 0.1_dp
    block
       type(pic_timer_type) :: my_timer
       real(dp) :: elapsed_time
@@ -32,8 +32,9 @@ program main
       real(dp), parameter :: h_right = 7.0_dp
       real(dp), parameter :: x_dplit = 250.0_dp
 
-      t_end = 10.0_dp
+      t_end = 0.05_dp
       cfl = 0.45_dp
+      ! both the grid and the initialization can be parallelized
       call my_timer%start()
       call init_grid(grid, xmin, xmax, ymin, ymax, dx)
       call generate_2d_grids(grid)
@@ -42,11 +43,14 @@ program main
       call global%info("Grid generation tok "//to_string(elapsed_time)//" seconds")
       call global%info("Grid size: nx = "//to_string(grid%nx)//" ny = "//to_string(grid%ny))
       call global%info("Total number of points is "//to_string(grid%nx*grid%ny))
-
+      call my_timer%start()
       call state%initialize_state(grid)
       call global%info("Dam break initialized with h_left = "//to_string(h_left)// &
                        ", h_right = "//to_string(h_right)//", x_dplit = "//to_string(x_dplit))
       call initialize_dam_break(state, h_left, h_right, x_dplit)
+      call my_timer%stop()
+      elapsed_time = my_timer%get_elapsed_time()
+      call global%info("Grid initialization tok "//to_string(elapsed_time)//" seconds")
 
       call my_timer%start()
       call time_loop(state, t_end, cfl)

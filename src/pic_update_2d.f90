@@ -29,7 +29,8 @@ contains
 
 !!$omp parallel do private(height, x_mom, y_mom, i, j, i_loc, j_loc)
 
-!$omp target teams distribute parallel do simd collapse(2) private(height, x_mom, y_mom, i, j, i_loc, j_loc) &
+!$omp target teams loop collapse(2) private(height, x_mom, y_mom, i, j, i_loc, j_loc) &
+!$omp num_teams(1024) thread_limit(32) &
 !$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum) &
 !$omp map(tofrom: flux_x, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv) &
 !$omp map(tofrom: flux_y, flux_y%flux_h, flux_y%flux_hu, flux_y%flux_hv)
@@ -65,7 +66,7 @@ contains
 
          end do
       end do
-      !$omp end target teams distribute parallel do simd
+      !$omp end target teams loop
 !      !$omp end parallel do
    end subroutine update_state_block
 
@@ -76,7 +77,7 @@ contains
 
       nx = state%grid%nx
       ny = state%grid%ny
-      !$omp target teams distribute parallel do simd collapse(2) private(i,j) shared(h_min) &
+      !$omp target teams loop collapse(2) private(i,j) shared(h_min) &
       !$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum)
       do j = 1, ny
          do i = 1, nx
@@ -87,7 +88,7 @@ contains
             end if
          end do
       end do
-      !$omp end target teams distribute parallel do simd
+      !$omp end target teams loop
    end subroutine enforce_min_height
 
 end module pic_update_2d

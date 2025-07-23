@@ -36,6 +36,7 @@ contains
          integer(default_int) :: i, j
 
          !do concurrent (j=1:grid%ny, i = 1:grid%nx)
+      !$omp parallel do private(i,j) collapse(2) schedule(static)
          do j = 1, grid%ny
          do i = 1, grid%nx
             state%water_height(i, j) = 0.0_dp
@@ -44,6 +45,7 @@ contains
             state%ground_elevation(i, j) = 0.0_dp
          end do
          end do
+         !$omp end parallel do
       end block
 
       state%is_initialized = .true.
@@ -55,12 +57,13 @@ contains
       real(dp), intent(in) :: h_left, h_right, x_dplit
       integer(default_int) :: i, j
       type(grid_2d_type) :: grid
+      real(dp) :: xval
 
       if (.not. state%is_initialized) error stop "State must be initialized first"
 
       grid = state%grid
 
-      !do concurrent (j = 1:grid%ny, i = 1:grid%nx)
+      !$omp parallel do private(i,j) collapse(2) schedule(static)
       do j = 1, grid%ny
       do i = 1, grid%nx
          if (grid%x(i) < x_dplit) then
@@ -72,6 +75,8 @@ contains
          state%y_momentum(i, j) = 0.0_dp
       end do
       end do
+      !$omp end parallel do
+
    end subroutine
 
 end module pic_state_2d
