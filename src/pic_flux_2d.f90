@@ -30,27 +30,40 @@ contains
 
   end subroutine allocate_fluxes
 
-  subroutine set_fluxes(fluxes, a)
+  subroutine set_fluxes(fluxes, a, threaded)
     class(flux_type), intent(inout) :: fluxes 
     real(dp), intent(in) :: a 
-    !integer(int64) :: nx, ny
-    !integer(int64) :: i, j
+    logical, intent(in), optional :: threaded
+    logical :: use_omp
+    integer(int64) :: nx, ny
+    integer(int64) :: i, j
 
+    if(present(threaded)) then 
+      use_omp = threaded
+    else
+      use_omp = .true.
+    end if
+
+     if(use_omp) then 
+     ! in theory this could be good for the GPU
+     nx = size(fluxes%flux_h,1)
+     ny = size(fluxes%flux_h,2)
+     !$omp target teams distribute parallel do simd collapse(2) private(i,j) default(shared) & 
+     !$omp map(to:fluxes, fluxes%flux_h, fluxes%flux_hu, fluxes%flux_hv)
+     do i = 1, nx
+       do j = 1, ny 
+         fluxes%flux_h(i,j) = a
+         fluxes%flux_hu(i,j) = a
+         fluxes%flux_hv(i,j) = a
+       end do 
+     end do 
+     !$omp end target teams distribute parallel do simd
+     else 
     fluxes%flux_h = a
     fluxes%flux_hu = a
     fluxes%flux_hv = a
-    ! in theory this could be good for the GPU
-    !nx = size(fluxes%flux_h,1)
-    !ny = size(fluxes%flux_h,2)
-    !!$omp parallel do collapse(2)
-    !do i = 1, nx
-    !  do j = 1, ny 
-    !    fluxes%flux_h(i,j) = a
-    !    fluxes%flux_hu(i,j) = a
-    !    fluxes%flux_hv(i,j) = a
-    !  end do 
-    !end do 
-    !!$omp end parallel do
+    endif 
+
 
   end subroutine set_fluxes
 
@@ -64,7 +77,7 @@ contains
 
   ! subroutine compute_rusanov_fluxes_xy(state, flux_x_h, flux_x_hu, flux_x_hv, flux_y_h, flux_y_hu, flux_y_hv)
   subroutine compute_rusanov_fluxes_xy(state, flux_x, flux_y)
-      type(state_2d_type), intent(in) :: state
+      type(state_2d_type), intent(inout) :: state
       type(flux_type), intent(inout) :: flux_x, flux_y
       !real(dp), allocatable, intent(inout) :: flux_x_h(:, :), flux_x_hu(:, :), &
       !                                      flux_x_hv(:, :), flux_y_h(:, :), flux_y_hu(:, :), flux_y_hv(:, :)
@@ -89,7 +102,15 @@ contains
             integer(default_int), parameter :: bx = 32, by = 32
             real(dp), parameter :: sqroot_gravity = sqrt(gravity)
 
-!$omp parallel do collapse(2) private(i, j, ii, jj, h_L, h_R, hu_L, hu_R, hv_L, hv_R, u_L, u_R, v_L, v_R, flux_L, flux_R, flux, c_L, c_R, a_max)
+            flux_L = 0.0_dp
+            flux_R = 0.0_dp  
+            flux = 0.0_dp
+
+!$omp target teams loop collapse(2) bind(teams) num_teams(2048) thread_limit(128) &
+!$omp private(i, j, ii, jj, h_L, h_R, hu_L, hu_R, hv_L, hv_R, u_L, u_R, v_L, v_R, flux_L, flux_R, flux, c_L, c_R, a_max) &
+!$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum)& 
+!$omp map(tofrom: flux_x, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv) &
+!$omp map(tofrom: flux_y, flux_y%flux_h, flux_y%flux_hu, flux_y%flux_hv)
             do jj = 1, ny - 1, by
                do ii = 1, nx - 1, bx
                   do j = jj, min(jj + by - 1, ny - 1)
@@ -101,11 +122,34 @@ contains
                         hu_R = state%x_momentum(i + 1, j)
                         hv_R = state%y_momentum(i + 1, j)
                         ! this can be a subroutine
-                        call compute_velocity(h_L, hu_L, hv_L, u_L, v_L)
-                        call compute_velocity(h_R, hu_R, hv_R, u_R, v_R)
+                        !call compute_velocity(h_L, hu_L, hv_L, u_L, v_L)
+                        !call compute_velocity(h_R, hu_R, hv_R, u_R, v_R)
 
-                        flux_L = [hu_L, hu_L*u_L + 0.5_dp*gravity*h_L**2, hu_L*v_L]
-                        flux_R = [hu_R, hu_R*u_R + 0.5_dp*gravity*h_R**2, hu_R*v_R]
+                        if (h_L < epsilon) h_L = epsilon
+                        if (h_L > epsilon) then
+                          u_L = hu_L/h_L
+                          v_L = hv_L/h_L
+                        else
+                          u_L = 0.0_dp
+                          v_L = 0.0_dp
+                        end if
+                        if (h_R < epsilon) h_R = epsilon
+                        if (h_R > epsilon) then
+                          u_R = hu_R/h_R
+                          v_R = hv_R/h_R
+                        else
+                          u_R = 0.0_dp
+                          v_R = 0.0_dp
+                        end if
+
+                        flux_L(1) = hu_L
+                        flux_L(2) = hu_L*u_L + 0.5_dp*gravity*h_L**2
+                        flux_L(3) = hu_L*v_L
+                        
+                        flux_R(1) = hu_R
+                        flux_R(2) = hu_R*u_R + 0.5_dp*gravity*h_R**2
+                        flux_R(3) = hu_R*v_R
+
 
                         c_L = abs(u_L) + sqroot_gravity*sqrt(h_L)
                         c_R = abs(u_R) + sqroot_gravity*sqrt(h_R)
@@ -131,11 +175,37 @@ contains
                         hu_R = state%x_momentum(i, j + 1)
                         hv_R = state%y_momentum(i, j + 1)
                         ! this can be a subroutine
-                        call compute_velocity(h_L, hu_L, hv_L, u_L, v_L)
-                        call compute_velocity(h_R, hu_R, hv_R, u_R, v_R)
+                        !call compute_velocity(h_L, hu_L, hv_L, u_L, v_L)
+                        !call compute_velocity(h_R, hu_R, hv_R, u_R, v_R)
+                        if (h_L < epsilon) h_L = epsilon
+                        if (h_L > epsilon) then
+                          u_L = hu_L/h_L
+                          v_L = hv_L/h_L
+                        else
+                          u_L = 0.0_dp
+                          v_L = 0.0_dp
+                        end if
+                        if (h_R < epsilon) h_R = epsilon
+                        if (h_R > epsilon) then
+                          u_R = hu_R/h_R
+                          v_R = hv_R/h_R
+                        else
+                          u_R = 0.0_dp
+                          v_R = 0.0_dp
+                        end if
 
-                        flux_L = [hu_L, hu_L*u_L + 0.5_dp*gravity*h_L**2, hu_L*v_L]
-                        flux_R = [hu_R, hu_R*u_R + 0.5_dp*gravity*h_R**2, hu_R*v_R]
+
+                        ! flux_L = [hu_L, hu_L*u_L + 0.5_dp*gravity*h_L**2, hu_L*v_L]
+                        ! flux_R = [hu_R, hu_R*u_R + 0.5_dp*gravity*h_R**2, hu_R*v_R]
+                        flux_L(1) = hu_L
+                        flux_L(2) = hu_L*u_L + 0.5_dp*gravity*h_L**2
+                        flux_L(3) = hu_L*v_L
+
+                        flux_R(1) = hu_R
+                        flux_R(2) = hu_R*u_R + 0.5_dp*gravity*h_R**2
+                        flux_R(3) = hu_R*v_R
+
+
 
                         c_L = abs(u_L) + sqroot_gravity*sqrt(h_L)
                         c_R = abs(u_R) + sqroot_gravity*sqrt(h_R)
@@ -157,7 +227,7 @@ contains
                   end do
                end do
             end do
-            !$omp end parallel do
+            !$omp end target teams loop
 
 !            end do
 
@@ -165,18 +235,28 @@ contains
 
          end block flux_loop
 
-         flux_y%flux_h(:, 1) = 0.0_dp;  flux_y%flux_h(:, ny + 1) = 0.0_dp
-         flux_y%flux_hu(:, 1) = 0.0_dp; flux_y%flux_hu(:, ny + 1) = 0.0_dp
-         flux_y%flux_hv(:, 1) = 0.0_dp; flux_y%flux_hv(:, ny + 1) = 0.0_dp
+!$omp target 
+         ! Set boundary conditions for fluxes
+         flux_y%flux_h(:, 1) = 0.0_dp  
+         flux_y%flux_h(:, ny + 1) = 0.0_dp
+         flux_y%flux_hu(:, 1) = 0.0_dp  
+         flux_y%flux_hu(:, ny + 1) = 0.0_dp
+         flux_y%flux_hv(:, 1) = 0.0_dp  
+         flux_y%flux_hv(:, ny + 1) = 0.0_dp
 
-         flux_x%flux_h(1, :) = 0.0_dp;  flux_x%flux_h(nx + 1, :) = 0.0_dp
-         flux_x%flux_hu(1, :) = 0.0_dp; flux_x%flux_hu(nx + 1, :) = 0.0_dp
-         flux_x%flux_hv(1, :) = 0.0_dp; flux_x%flux_hv(nx + 1, :) = 0.0_dp
+         flux_x%flux_h(1, :) = 0.0_dp  
+         flux_x%flux_h(nx + 1, :) = 0.0_dp
+         flux_x%flux_hu(1, :) = 0.0_dp 
+         flux_x%flux_hu(nx + 1, :) = 0.0_dp
+         flux_x%flux_hv(1, :) = 0.0_dp 
+         flux_x%flux_hv(nx + 1, :) = 0.0_dp
+!$omp end target 
 
       end block workspace
    contains
 
       pure subroutine compute_velocity(h, hu, hv, u, v)
+      !$omp declare target
          real(dp), intent(inout) :: h
          real(dp), intent(in)    :: hu, hv
          real(dp), intent(out)   :: u, v

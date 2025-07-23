@@ -1,5 +1,6 @@
 module pic_shallow_water_driver
    use pic_types, only: default_int, dp, sp
+   use pic_gpu_utils, only: dasum
    use pic_state_2d, only: state_2d_type
    use pic_flux_2d, only: compute_rusanov_fluxes_xy, flux_type
    use pic_boundaries, only: apply_reflective_boundaries
@@ -54,7 +55,6 @@ contains
       character(len=100) :: filename
       integer :: i, j
       filename = "height_step_"//to_string(step)//".csv"
-
       open (unit=100, file=filename, status='replace')
       do j = 1, state%grid%ny
          do i = 1, state%grid%nx
@@ -89,19 +89,29 @@ contains
       call flux_x%allocate_fluxes(nx+1, ny) 
       call flux_y%allocate_fluxes(nx, ny+1) 
 
-      !allocate (flux_x_h(nx + 1, ny), flux_x_hu(nx + 1, ny), flux_x_hv(nx + 1, ny))
-      !allocate (flux_y_h(nx, ny + 1), flux_y_hu(nx, ny + 1), flux_y_hv(nx, ny + 1))
       evolve_loop: block
          type(pic_timer_type) :: my_timer
          type(pic_timer_type) :: inner_timer
          real(dp) :: elapsed_time
          real(dp), parameter :: h_min = 1.0e-5_dp
          real(dp) :: before_mass, after_mass, initial_mass, final_mass
+         real(dp) :: total_mass
+         real(dp) :: total_mom_x, total_mom_y
+         real(dp) :: net_flux
+         integer :: i,j 
+         net_flux = 0.0_dp
+         before_mass = 0.0_dp
+         after_mass = 0.0_dp
          initial_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
          call global%info( &
             pad("Step", 8)//pad("Time", 12)//pad("dt", 12)// &
-            pad("Time/Step", 14)//pad("Mass", 12)//pad("Net Flux", 12)//pad("ΔMass", 12))
+            pad("Time/Step", 14)//pad("Mass", 12)//pad("ΔMass", 12))
 
+         !$omp target enter data map(alloc: flux_x, flux_y, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv, flux_y%flux_h, flux_y%flux_hu,flux_y%flux_hv)
+
+         !$omp target data map(tofrom: state) map(tofrom: state%water_height, state%x_momentum, state%y_momentum)
+         call flux_x%set_fluxes(0.0_dp, .true.)
+         call flux_y%set_fluxes(0.0_dp, .true.)
          do while (t < t_end)
             if (mod(step, print_interval) == 0) then
                call my_timer%start()
@@ -113,24 +123,14 @@ contains
             call apply_reflective_boundaries(state)
 
             ! Compute fluxes
-            !flux_x_h = 0.0_dp
-            !flux_x_hu = 0.0_dp
-            !flux_x_hv = 0.0_dp
-            !flux_y_h = 0.0_dp
-            !flux_y_hu = 0.0_dp
-            !flux_y_hv = 0.0_dp
-            call flux_x%set_fluxes(0.0_dp)
-            call flux_y%set_fluxes(0.0_dp)
-            !call compute_rusanov_fluxes_xy(state, flux_x_h, flux_x_hu, flux_x_hv, flux_y_h, flux_y_hu, flux_y_hv)
             call compute_rusanov_fluxes_xy(state, flux_x, flux_y)
 
+            before_mass = dasum(state%water_height)*state%grid%dx*state%grid%dy
             ! Update state
-            before_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
             call update_state_block(state, flux_x, flux_y, dt)
-            ! call update_state_block(state, flux_x_h, flux_x_hu, flux_x_hv, &
-            !                         flux_y_h, flux_y_hu, flux_y_hv, dt)
             call enforce_min_height(state, h_min)
-            after_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
+
+            after_mass = dasum(state%water_height)*state%grid%dx*state%grid%dy
 
             ! Advance time
             t = t + dt
@@ -139,31 +139,28 @@ contains
             if (mod(step, print_interval) == 0) then
                call my_timer%stop()
                elapsed_time = my_timer%get_elapsed_time()
-               call check_mass_conservation(state, initial_mass, step)
-               printing: block
-
-                  real(dp) :: total_mass
-                  real(dp) :: total_mom_x, total_mom_y
-                  real(dp) :: net_flux
-                  net_flux = sum(flux_x%flux_h(nx + 1, :)) - sum(flux_x%flux_h(1, :)) + &
-                             sum(flux_y%flux_h(:, ny + 1)) - sum(flux_y%flux_h(:, 1))
-                  total_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
-                  total_mom_x = sum(state%x_momentum)*state%grid%dx*state%grid%dy
-                  total_mom_y = sum(state%y_momentum)*state%grid%dx*state%grid%dy
+               !call check_mass_conservation(state, initial_mass, step)
+               !printing: block
+                  
+                  total_mass = dasum(state%water_height)*state%grid%dx*state%grid%dy 
+                  total_mom_x = dasum(state%x_momentum)*state%grid%dx*state%grid%dy
+                  total_mom_y = dasum(state%y_momentum)*state%grid%dx*state%grid%dy
 
                   call global%info( &
                      pad(to_string(step), 8)//" "//pad(to_string(round_dp(t, 4)), 12)//" "// &
                      pad(to_string(round_dp(dt, 4)), 12)//" "//pad(to_string(round_dp(elapsed_time, 4)), 14)//" "// &
-                     pad(to_string(total_mass), 12)//" "//pad(to_string(round_dp(net_flux, 4)), 12)//" "// &
+                     pad(to_string(total_mass), 12)//" "// &
                      pad(to_string(round_dp((after_mass - before_mass), 4)), 12))
 
-               end block printing
+              ! end block printing
 
-               call write_water_height_to_csv(state, step)
+               !call write_water_height_to_csv(state, step)
             end if
-            final_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
          end do
+         !$omp end target data
+         !$omp target exit data map(release: flux_x, flux_y, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv, flux_y%flux_h, flux_y%flux_hu,flux_y%flux_hv)
+          final_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
          call global%info("Final mass: "//to_string(final_mass)// &
                           ", Initial mass: "//to_string(initial_mass)// &

@@ -7,7 +7,7 @@ module pic_timestep
 contains
 
    function compute_dt(state, cfl) result(dt)
-      type(state_2d_type), intent(in) :: state
+      type(state_2d_type), intent(inout) :: state
       real(dp), intent(in) :: cfl
       real(dp) :: dt
 
@@ -21,11 +21,12 @@ contains
 
       max_speed = 0.0_dp
 
-      !$omp parallel do collapse(2) default(shared) private(i, j, h, u, v, a) reduction(max:max_speed)
+      !$omp target teams distribute parallel do collapse(2) default(shared) private(i, j, h, u, v, a)  & 
+      !$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum, max_speed) &
+      !$omp reduction(max:max_speed) 
       do j = 1, ny
       do i = 1, nx
          h = state%water_height(i, j)
-
          if (h > epsilon) then
             u = state%x_momentum(i, j)/h
             v = state%y_momentum(i, j)/h
@@ -34,7 +35,7 @@ contains
          end if
       end do
       end do
-
+      !$omp end target teams distribute parallel do
       if (max_speed > 0.0_dp) then
          dt = cfl*min(dx, dy)/max_speed
       else

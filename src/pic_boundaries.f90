@@ -15,6 +15,7 @@ module pic_boundaries
       ny = state%grid%ny
 
       ! Reflective in X direction
+      !$omp target
       state%water_height(1, :) = state%water_height(2, :)
       state%water_height(nx, :) = state%water_height(nx - 1, :)
       state%x_momentum(1, :) = -state%x_momentum(2, :)
@@ -46,6 +47,7 @@ module pic_boundaries
       state%water_height(nx, ny) = state%water_height(nx - 1, ny - 1)
       state%x_momentum(nx, ny) = -state%x_momentum(nx - 1, ny - 1)
       state%y_momentum(nx, ny) = -state%y_momentum(nx - 1, ny - 1)
+      !$omp end target
 
    end subroutine apply_reflective_boundaries
 
