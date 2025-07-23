@@ -9,6 +9,8 @@ can be installed following the [instructions here](https://fpm.fortran-lang.org/
 
 Once the FPM is installed, simply do: `fpm build` and to run `fpm run`
 
+You can profile a run with `fpm run --runner 'nsys profile --stats=true' --profile release --flag "-O3 -fast -mp=gpu"`
+
 ## Visualizing your simulation
 
 The code will dump CSVs that detail the dam breaking, you can plot them using the visualize.py script
