@@ -1,11 +1,11 @@
 program main
    use pic, only: pic_print_banner
    use pic_types, only: sp, dp, default_int
-   use pic_timers, only: pic_timer_type
+   use pic_timer, only: pic_timer_type
    use pic_matrix_printer, only: print_array
-   use pic_grid_2d
-   use pic_state_2d
-   use pic_shallow_water_driver
+   use pic_swe_grid_2d
+   use pic_swe_state_2d
+   use pic_swe_time_driver
    use pic_logger, only: global => global_logger, info_level
    implicit none
    real(dp), dimension(:, :), allocatable :: A, B, C

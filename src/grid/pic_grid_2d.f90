@@ -1,4 +1,4 @@
-module pic_grid_2d
+module pic_swe_grid_2d
    use pic_types, only: default_int, dp, sp
    implicit none
 
@@ -42,10 +42,10 @@ contains
       block
          integer(default_int) :: i, j
 
-         do concurrent(i=1:grid%nx)
+         do i = 1, grid%nx
             grid%x(i) = xmin + (i - 1)*grid%dx
          end do
-         do concurrent(i=1:grid%ny)
+         do i = 1, grid%ny
             grid%y(i) = ymin + (i - 1)*grid%dy
          end do
 
@@ -66,9 +66,11 @@ contains
       block
          integer(default_int) :: i, j
 
-         do concurrent(j=1:grid%ny, i=1:grid%nx)
+         do j = 1, grid%ny 
+          do i = 1, grid%nx
             grid%x2d(i, j) = grid%x(i)
             grid%y2d(i, j) = grid%y(j)
+         end do
          end do
       end block
 
@@ -82,4 +84,4 @@ contains
       coord = [grid%x(i), grid%y(j)]
    end function get_grid_coords
 
-end module pic_grid_2d
+end module pic_swe_grid_2d

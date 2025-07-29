@@ -1,6 +1,6 @@
-module pic_boundaries
+module pic_swe_boundaries
    use pic_types, only: default_int, dp
-   use pic_state_2d, only: state_2d_type
+   use pic_swe_state_2d, only: state_2d_type
    implicit none
 
    private 
@@ -52,4 +52,4 @@ module pic_boundaries
    end subroutine apply_reflective_boundaries
 
 
-   end module pic_boundaries
+   end module pic_swe_boundaries

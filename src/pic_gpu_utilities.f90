@@ -1,4 +1,4 @@
-module pic_gpu_utils
+module pic_swe_gpu_utils
 use pic_types, only: dp
 implicit none 
 
@@ -51,4 +51,4 @@ end do
 
 end function sum_2d
 
-end module pic_gpu_utils 
+end module pic_swe_gpu_utils 

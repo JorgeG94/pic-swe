@@ -4,27 +4,10 @@ module test_helpers
    real(dp), parameter :: tol_dp = 1.0e-12_dp
    real(sp), parameter :: tol_sp = 1.0e-6_sp
    private
-   public :: is_equal, print_matrix_to_fortran
-   interface is_equal
-      module procedure is_equal_sp
-      module procedure is_equal_dp
-   end interface is_equal
+   public ::  print_matrix_to_fortran
 
 contains
 
-   elemental function is_equal_sp(a, b) result(res)
-      real(sp), intent(in) :: a, b
-      logical :: res
-
-      res = abs(a - b) < tol_sp
-   end function is_equal_sp
-
-   elemental function is_equal_dp(a, b) result(res)
-      real(dp), intent(in) :: a, b
-      logical :: res
-
-      res = abs(a - b) < tol_dp
-   end function is_equal_dp
 
    subroutine print_matrix_to_fortran(mat, name)
    !! Prints matrix as a real(dp), parameter :: name(dim1, dim2) = reshape([...], [dim1, dim2])

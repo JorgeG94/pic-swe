@@ -1,7 +1,7 @@
 module test_grid_2d
-   use test_helpers, only: is_equal
+   use pic_test_helpers, only: is_equal
    use pic_types, only: dp
-   use pic_grid_2d, only: grid_2d_type, init_grid, generate_2d_grids
+   use pic_swe_grid_2d, only: grid_2d_type, init_grid, generate_2d_grids
    use testdrive, only: new_unittest, unittest_type, error_type, check, test_failed
    implicit none
    private
@@ -14,6 +14,7 @@ contains
       type(unittest_type), allocatable, intent(out) :: testsuite(:)
       integer, parameter :: ntests = 2
 
+      print *, "INITIALIZING"
       allocate (testsuite(ntests))
       testsuite(1) = new_unittest("test_init_grid", test_init_grid)
       testsuite(2) = new_unittest("test_init_grid_dx", test_init_grid_dx)
@@ -33,6 +34,8 @@ contains
       dy = 1.0_dp
 
       call init_grid(grid, xmin, xmax, ymin, ymax, dx, dy)
+
+      print *, grid%xmin
 
       call check(error, is_equal(grid%xmin, xmin))
       call check(error, is_equal(grid%xmax, xmax))

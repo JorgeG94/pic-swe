@@ -1,7 +1,8 @@
-module pic_flux_2d
+module pic_swe_flux_2d
    use pic_types
-   use pic_state_2d
-   use local_pic_constants, only: gravity, epsilon
+   use pic_swe_state_2d
+   use pic_swe_constants, only: epsilon
+   use pic_constants, only: gravity
    implicit none
 
   type :: flux_type 
@@ -272,4 +273,4 @@ contains
       end subroutine compute_velocity
    end subroutine compute_rusanov_fluxes_xy
 
-end module pic_flux_2d
+end module pic_swe_flux_2d

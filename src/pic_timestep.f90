@@ -1,7 +1,8 @@
-module pic_timestep
+module pic_swe_timestep
    use pic_types, only: default_int, dp, sp
-   use pic_state_2d, only: state_2d_type
-   use local_pic_constants, only: gravity, epsilon
+   use pic_swe_state_2d, only: state_2d_type
+   use pic_swe_constants, only: epsilon
+   use pic_constants, only: gravity
    implicit none
 
 contains
@@ -43,4 +44,4 @@ contains
       end if
    end function compute_dt
 
-end module pic_timestep
+end module pic_swe_timestep

@@ -1,10 +1,10 @@
 module test_timestep
-   use test_helpers, only: is_equal
+   use pic_test_helpers, only: is_equal
    use pic_string_utils, only: to_string
    use pic_types, only: dp
-   use pic_timestep, only: compute_dt
-   use pic_grid_2d, only: grid_2d_type, init_grid
-   use pic_state_2d, only: state_2d_type, initialize_state, initialize_dam_break
+   use pic_swe_timestep, only: compute_dt
+   use pic_swe_grid_2d, only: grid_2d_type, init_grid, generate_2d_grids
+   use pic_swe_state_2d, only: state_2d_type, initialize_state, initialize_dam_break
    use testdrive, only: new_unittest, unittest_type, error_type, check, test_failed
    implicit none
    private
@@ -37,6 +37,7 @@ contains
       ymax = 1.0_dp
       dx = 1.0_dp
       call init_grid(grid, xmin, xmax, ymin, ymax, dx)
+      call generate_2d_grids(grid)
 
       ! Initialize a dummy state
       call initialize_state(state, grid)
@@ -63,6 +64,7 @@ contains
       ymax = 1.0_dp
       dx = 1.0_dp
       call init_grid(grid, xmin, xmax, ymin, ymax, dx)
+      call generate_2d_grids(grid)
 
       ! Initialize a dummy state
       call initialize_state(state, grid)
