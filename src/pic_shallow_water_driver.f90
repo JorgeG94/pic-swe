@@ -6,9 +6,9 @@ module pic_shallow_water_driver
    use pic_boundaries, only: apply_reflective_boundaries
    use pic_update_2d, only: enforce_min_height, update_state_block
    use pic_timestep, only: compute_dt
-   use pic_timers
+   use pic_timer
    use pic_logger, only: global => global_logger
-   use pic_string_utils, only: to_string
+   use pic_string, only: to_string
 
    implicit none
 
