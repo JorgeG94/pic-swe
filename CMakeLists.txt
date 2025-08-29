@@ -20,7 +20,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 # see cmake/ subdirectory for this
 include(demo_status)
 
-option(ENABLE_TESTING "Enable testing for ${project_name}" ON)
+option(ENABLE_TESTING "Enable testing for ${project_name}" OFF)
 
 add_subdirectory(cmake)
 

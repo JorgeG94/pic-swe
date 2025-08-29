@@ -8,7 +8,7 @@ module pic_swe_time_driver
    use pic_swe_timestep, only: compute_dt
    use pic_timer, only: pic_timer_type
    use pic_logger, only: global => global_logger
-   use pic_string_utils, only: to_string
+   use pic_string, only: to_string
 
    implicit none
 
