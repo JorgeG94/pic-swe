@@ -1,8 +1,8 @@
-module pic_update_2d
+module pic_swe_update_2d
    use pic_types, only: default_int, dp, sp
-   use pic_flux_2d, only: flux_type
-   use pic_state_2d, only: state_2d_type
-   use local_pic_constants, only: epsilon
+   use pic_swe_flux_2d, only: flux_type
+   use pic_swe_state_2d, only: state_2d_type
+   use pic_swe_constants, only: epsilon
    implicit none
 
 contains
@@ -91,4 +91,4 @@ contains
       !$omp end target teams loop
    end subroutine enforce_min_height
 
-end module pic_update_2d
+end module pic_swe_update_2d

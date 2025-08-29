@@ -1,6 +1,6 @@
-module pic_state_2d
+module pic_swe_state_2d
    use pic_types, only: default_int, dp, sp
-   use pic_grid_2d
+   use pic_swe_grid_2d
    implicit none
 
    type :: state_2d_type
@@ -79,4 +79,4 @@ contains
 
    end subroutine
 
-end module pic_state_2d
+end module pic_swe_state_2d

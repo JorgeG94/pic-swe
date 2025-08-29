@@ -21,8 +21,8 @@ program pic_tester
    allocate (testsuites(ntest_suites))
    ! here you add another test suite to the array
    testsuites(1) = new_testsuite("base_utils", collect_suite1)
-   testsuites(2) = new_testsuite("grid_2d", collect_tests_grid_2d)
-   testsuites(3) = new_testsuite("state_2d", collect_tests_state)
+   testsuites(2) = new_testsuite("grid", collect_tests_grid_2d)
+   testsuites(3) = new_testsuite("state", collect_tests_state)
    testsuites(4) = new_testsuite("timestep", collect_tests_timestep)
    testsuites(5) = new_testsuite("boundaries", collect_tests_boundaries)
    testsuites(6) = new_testsuite("fluxes", collect_tests_fluxes)

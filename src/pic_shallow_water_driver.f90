@@ -1,12 +1,12 @@
-module pic_shallow_water_driver
+module pic_swe_time_driver
    use pic_types, only: default_int, dp, sp
-   use pic_gpu_utils, only: dasum
-   use pic_state_2d, only: state_2d_type
-   use pic_flux_2d, only: compute_rusanov_fluxes_xy, flux_type
-   use pic_boundaries, only: apply_reflective_boundaries
-   use pic_update_2d, only: enforce_min_height, update_state_block
-   use pic_timestep, only: compute_dt
-   use pic_timer
+   use pic_swe_gpu_utils, only: dasum
+   use pic_swe_state_2d, only: state_2d_type
+   use pic_swe_flux_2d, only: compute_rusanov_fluxes_xy, flux_type
+   use pic_swe_boundaries, only: apply_reflective_boundaries
+   use pic_swe_update_2d, only: enforce_min_height, update_state_block
+   use pic_swe_timestep, only: compute_dt
+   use pic_timer, only: pic_timer_type
    use pic_logger, only: global => global_logger
    use pic_string, only: to_string
 
@@ -174,4 +174,4 @@ contains
       ! deallocate (flux_y_h, flux_y_hu, flux_y_hv)
    end subroutine time_loop
 
-end module pic_shallow_water_driver
+end module pic_swe_time_driver

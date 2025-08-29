@@ -1,9 +1,9 @@
 module test_state
-   use test_helpers, only: is_equal
+   use pic_test_helpers, only: is_equal
    use pic_types, only: dp
    use pic_string_utils, only: to_string
-   use pic_state_2d, only: state_2d_type, initialize_state, initialize_dam_break
-   use pic_grid_2d, only: grid_2d_type, init_grid
+   use pic_swe_state_2d, only: state_2d_type, initialize_state, initialize_dam_break
+   use pic_swe_grid_2d, only: grid_2d_type, init_grid
    use testdrive, only: new_unittest, unittest_type, error_type, check, test_failed
    implicit none
    private
