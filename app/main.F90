@@ -18,9 +18,9 @@ program main
 
    xmin = zero
    ymin = zero
-   xmax = 500_dp
-   ymax = 500_dp
-   dx = 0.1_dp
+   xmax = 512.0_dp
+   ymax = 512.0_dp
+   dx = 1.0_dp
    block
       type(pic_timer_type) :: my_timer
       real(dp) :: elapsed_time
@@ -29,9 +29,9 @@ program main
       real(dp) :: cfl
       real(dp), parameter :: h_left = 20.0_dp
       real(dp), parameter :: h_right = 7.0_dp
-      real(dp), parameter :: x_dplit = 250.0_dp
+      real(dp), parameter :: x_dplit = 150.0_dp
 
-      t_end = 0.05_dp
+      t_end = 3.05_dp
       cfl = 0.45_dp
       ! both the grid and the initialization can be parallelized
       call my_timer%start()

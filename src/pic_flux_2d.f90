@@ -108,14 +108,16 @@ contains
             flux = 0.0_dp
 
 !$omp target teams loop collapse(2) bind(teams) num_teams(2048) thread_limit(128) &
-!$omp private(i, j, ii, jj, h_L, h_R, hu_L, hu_R, hv_L, hv_R, u_L, u_R, v_L, v_R, flux_L, flux_R, flux, c_L, c_R, a_max) &
+!$omp private(i, j,  h_L, h_R, hu_L, hu_R, hv_L, hv_R, u_L, u_R, v_L, v_R, flux_L, flux_R, flux, c_L, c_R, a_max) &
 !$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum)& 
 !$omp map(tofrom: flux_x, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv) &
 !$omp map(tofrom: flux_y, flux_y%flux_h, flux_y%flux_hu, flux_y%flux_hv)
-            do jj = 1, ny - 1, by
-               do ii = 1, nx - 1, bx
-                  do j = jj, min(jj + by - 1, ny - 1)
-                     do i = ii, min(ii + bx - 1, nx - 1)
+                     do j = 1, ny
+                      do i = 1, nx
+            !do jj = 1, ny - 1, by
+               !do ii = 1, nx - 1, bx
+                  !do j = jj, min(jj + by - 1, ny - 1)
+                     !do i = ii, min(ii + bx - 1, nx - 1)
                         h_L = state%water_height(i, j)
                         hu_L = state%x_momentum(i, j)
                         hv_L = state%y_momentum(i, j)
@@ -224,8 +226,8 @@ contains
 
 !              end block y_flux
 
-                     end do
-                  end do
+                     !end do
+                  !end do
                end do
             end do
             !$omp end target teams loop
