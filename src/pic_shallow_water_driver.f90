@@ -90,7 +90,7 @@ contains
       call flux_y%allocate_fluxes(nx, ny+1) 
 
       evolve_loop: block
-         type(pic_timer_type) :: my_timer
+         type(pic_timer_type) :: my_timer, second_timer
          type(pic_timer_type) :: inner_timer
          real(dp) :: elapsed_time
          real(dp), parameter :: h_min = 1.0e-5_dp
@@ -112,6 +112,7 @@ contains
          !$omp target data map(tofrom: state) map(tofrom: state%water_height, state%x_momentum, state%y_momentum)
          call flux_x%set_fluxes(0.0_dp, .true.)
          call flux_y%set_fluxes(0.0_dp, .true.)
+         call second_timer%start()
          do while (t < t_end)
             if (mod(step, print_interval) == 0) then
                call my_timer%start()
@@ -135,10 +136,9 @@ contains
             ! Advance time
             t = t + dt
             step = step + 1
-
             if (mod(step, print_interval) == 0) then
                call my_timer%stop()
-               elapsed_time = my_timer%get_elapsed_time()
+               elapsed_time = my_timer%get_elapsed_time() / real(print_interval,dp)
                !call check_mass_conservation(state, initial_mass, step)
                !printing: block
                   
@@ -158,6 +158,9 @@ contains
             end if
 
          end do
+               call second_timer%stop()
+               elapsed_time = second_timer%get_elapsed_time()
+               print *, to_string((elapsed_time / step))
          !$omp end target data
          !$omp target exit data map(release: flux_x, flux_y, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv, flux_y%flux_h, flux_y%flux_hu,flux_y%flux_hv)
           final_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
