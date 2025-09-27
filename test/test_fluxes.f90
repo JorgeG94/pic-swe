@@ -78,7 +78,6 @@ contains
       call check(error, is_equal(dt, expected_dt), "Time step should be "//to_string(expected_dt))
       call apply_reflective_boundaries(state)
 
-
       call flux_x%allocate_fluxes(nx + 1, ny)
       call flux_y%allocate_fluxes(nx, ny + 1)
       call flux_x%set_fluxes(0.0_dp)

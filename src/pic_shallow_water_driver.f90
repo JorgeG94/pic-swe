@@ -71,7 +71,7 @@ contains
 
       type(state_2d_type), intent(inout) :: state
       real(dp), intent(in) :: t_end, cfl
-      type(flux_type) :: flux_x, flux_y 
+      type(flux_type) :: flux_x, flux_y
       integer(default_int) :: nx, ny
 
       real(dp) :: dt, t
@@ -86,8 +86,8 @@ contains
       nx = state%grid%nx
       ny = state%grid%ny
 
-      call flux_x%allocate_fluxes(nx+1, ny) 
-      call flux_y%allocate_fluxes(nx, ny+1) 
+      call flux_x%allocate_fluxes(nx + 1, ny)
+      call flux_y%allocate_fluxes(nx, ny + 1)
 
       evolve_loop: block
          type(pic_timer_type) :: my_timer, second_timer
@@ -98,7 +98,7 @@ contains
          real(dp) :: total_mass
          real(dp) :: total_mom_x, total_mom_y
          real(dp) :: net_flux
-         integer :: i,j 
+         integer :: i, j
          net_flux = 0.0_dp
          before_mass = 0.0_dp
          after_mass = 0.0_dp
@@ -126,44 +126,44 @@ contains
             ! Compute fluxes
             call compute_rusanov_fluxes_xy(state, flux_x, flux_y)
 
-            before_mass = dasum(state%water_height)*state%grid%dx*state%grid%dy
+            before_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
             ! Update state
             call update_state_block(state, flux_x, flux_y, dt)
             call enforce_min_height(state, h_min)
 
-            after_mass = dasum(state%water_height)*state%grid%dx*state%grid%dy
+            after_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
             ! Advance time
             t = t + dt
             step = step + 1
             if (mod(step, print_interval) == 0) then
                call my_timer%stop()
-               elapsed_time = my_timer%get_elapsed_time() / real(print_interval,dp)
+               elapsed_time = my_timer%get_elapsed_time()/real(print_interval, dp)
                !call check_mass_conservation(state, initial_mass, step)
                !printing: block
-                  
-                  total_mass = dasum(state%water_height)*state%grid%dx*state%grid%dy 
-                  total_mom_x = dasum(state%x_momentum)*state%grid%dx*state%grid%dy
-                  total_mom_y = dasum(state%y_momentum)*state%grid%dx*state%grid%dy
 
-                  call global%info( &
-                     pad(to_string(step), 8)//" "//pad(to_string(round_dp(t, 4)), 12)//" "// &
-                     pad(to_string(round_dp(dt, 4)), 12)//" "//pad(to_string(round_dp(elapsed_time, 4)), 14)//" "// &
-                     pad(to_string(total_mass), 12)//" "// &
-                     pad(to_string(round_dp((after_mass - before_mass), 4)), 12))
+               total_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
+               total_mom_x = sum(state%x_momentum)*state%grid%dx*state%grid%dy
+               total_mom_y = sum(state%y_momentum)*state%grid%dx*state%grid%dy
 
-              ! end block printing
+               call global%info( &
+                  pad(to_string(step), 8)//" "//pad(to_string(round_dp(t, 4)), 12)//" "// &
+                  pad(to_string(round_dp(dt, 4)), 12)//" "//pad(to_string(round_dp(elapsed_time, 4)), 14)//" "// &
+                  pad(to_string(total_mass), 12)//" "// &
+                  pad(to_string(round_dp((after_mass - before_mass), 4)), 12))
+
+               ! end block printing
 
                !call write_water_height_to_csv(state, step)
             end if
 
          end do
-               call second_timer%stop()
-               elapsed_time = second_timer%get_elapsed_time()
-               print *, to_string((elapsed_time / step))
+         call second_timer%stop()
+         elapsed_time = second_timer%get_elapsed_time()
+         print *, to_string((elapsed_time/step))
          !$omp end target data
          !$omp target exit data map(release: flux_x, flux_y, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv, flux_y%flux_h, flux_y%flux_hu,flux_y%flux_hv)
-          final_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
+         final_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
          call global%info("Final mass: "//to_string(final_mass)// &
                           ", Initial mass: "//to_string(initial_mass)// &

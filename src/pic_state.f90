@@ -36,7 +36,7 @@ contains
          integer(default_int) :: i, j
 
          !do concurrent (j=1:grid%ny, i = 1:grid%nx)
-      !$omp parallel do private(i,j) collapse(2) schedule(static)
+         !$omp parallel do private(i,j) collapse(2) schedule(static)
          do j = 1, grid%ny
          do i = 1, grid%nx
             state%water_height(i, j) = 0.0_dp

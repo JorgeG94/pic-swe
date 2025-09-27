@@ -7,14 +7,9 @@ module pic_swe_update_2d
 
 contains
 
-
-!   subroutine update_state_block(state, flux_x_h, flux_x_hu, flux_x_hv, &
-!                                 flux_y_h, flux_y_hu, flux_y_hv, dt)
-    subroutine update_state_block(state, flux_x, flux_y, dt)
+   subroutine update_state_block(state, flux_x, flux_y, dt)
       class(state_2d_type), intent(inout) :: state
       type(flux_type), intent(inout) :: flux_x, flux_y
-      !real(dp), intent(in) :: flux_x_h(:, :), flux_x_hu(:, :), flux_x_hv(:, :)
-      !real(dp), intent(in) :: flux_y_h(:, :), flux_y_hu(:, :), flux_y_hv(:, :)
       real(dp), intent(in) :: dt
 
       integer :: i, j, nx, ny, ii, jj, i_loc, j_loc
@@ -34,22 +29,22 @@ contains
 !$omp map(to:    flux_x, flux_x%flux_h,  flux_x%flux_hu,  flux_x%flux_hv, &
 !$omp            flux_y, flux_y%flux_h,  flux_y%flux_hu,  flux_y%flux_hv) &
 !$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum)
-do j = 1, ny
-  do i = 1, nx
-    dh  = -dt/dx * (flux_x%flux_h (i+1, j) - flux_x%flux_h (i, j)) &
-          -dt/dy * (flux_y%flux_h (i, j+1) - flux_y%flux_h (i, j))
+      do j = 1, ny
+         do i = 1, nx
+            dh = -dt/dx*(flux_x%flux_h(i + 1, j) - flux_x%flux_h(i, j)) &
+                 - dt/dy*(flux_y%flux_h(i, j + 1) - flux_y%flux_h(i, j))
 
-    dhu = -dt/dx * (flux_x%flux_hu(i+1, j) - flux_x%flux_hu(i, j)) &
-          -dt/dy * (flux_y%flux_hu(i, j+1) - flux_y%flux_hu(i, j))
+            dhu = -dt/dx*(flux_x%flux_hu(i + 1, j) - flux_x%flux_hu(i, j)) &
+                  - dt/dy*(flux_y%flux_hu(i, j + 1) - flux_y%flux_hu(i, j))
 
-    dhv = -dt/dx * (flux_x%flux_hv(i+1, j) - flux_x%flux_hv(i, j)) &
-          -dt/dy * (flux_y%flux_hv(i, j+1) - flux_y%flux_hv(i, j))
+            dhv = -dt/dx*(flux_x%flux_hv(i + 1, j) - flux_x%flux_hv(i, j)) &
+                  - dt/dy*(flux_y%flux_hv(i, j + 1) - flux_y%flux_hv(i, j))
 
-    state%water_height(i, j) = state%water_height(i, j) + dh
-    state%x_momentum  (i, j) = state%x_momentum  (i, j) + dhu
-    state%y_momentum  (i, j) = state%y_momentum  (i, j) + dhv
-  end do
-end do
+            state%water_height(i, j) = state%water_height(i, j) + dh
+            state%x_momentum(i, j) = state%x_momentum(i, j) + dhu
+            state%y_momentum(i, j) = state%y_momentum(i, j) + dhv
+         end do
+      end do
 !$omp end target teams loop
 
 !      !$omp end parallel do
