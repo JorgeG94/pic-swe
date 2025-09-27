@@ -126,12 +126,12 @@ contains
             ! Compute fluxes
             call compute_rusanov_fluxes_xy(state, flux_x, flux_y)
 
-            before_mass = dasum(state%water_height)*state%grid%dx*state%grid%dy
+            before_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
             ! Update state
             call update_state_block(state, flux_x, flux_y, dt)
             call enforce_min_height(state, h_min)
 
-            after_mass = dasum(state%water_height)*state%grid%dx*state%grid%dy
+            after_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
             ! Advance time
             t = t + dt
@@ -142,9 +142,9 @@ contains
                !call check_mass_conservation(state, initial_mass, step)
                !printing: block
                   
-                  total_mass = dasum(state%water_height)*state%grid%dx*state%grid%dy 
-                  total_mom_x = dasum(state%x_momentum)*state%grid%dx*state%grid%dy
-                  total_mom_y = dasum(state%y_momentum)*state%grid%dx*state%grid%dy
+                  total_mass = sum(state%water_height)*state%grid%dx*state%grid%dy 
+                  total_mom_x = sum(state%x_momentum)*state%grid%dx*state%grid%dy
+                  total_mom_y = sum(state%y_momentum)*state%grid%dx*state%grid%dy
 
                   call global%info( &
                      pad(to_string(step), 8)//" "//pad(to_string(round_dp(t, 4)), 12)//" "// &

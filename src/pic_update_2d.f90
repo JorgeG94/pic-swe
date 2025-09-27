@@ -8,13 +8,9 @@ module pic_swe_update_2d
 contains
 
 
-!   subroutine update_state_block(state, flux_x_h, flux_x_hu, flux_x_hv, &
-!                                 flux_y_h, flux_y_hu, flux_y_hv, dt)
     subroutine update_state_block(state, flux_x, flux_y, dt)
       class(state_2d_type), intent(inout) :: state
       type(flux_type), intent(inout) :: flux_x, flux_y
-      !real(dp), intent(in) :: flux_x_h(:, :), flux_x_hu(:, :), flux_x_hv(:, :)
-      !real(dp), intent(in) :: flux_y_h(:, :), flux_y_hu(:, :), flux_y_hv(:, :)
       real(dp), intent(in) :: dt
 
       integer :: i, j, nx, ny, ii, jj, i_loc, j_loc
