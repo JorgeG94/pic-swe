@@ -8,7 +8,6 @@ module test_helpers
 
 contains
 
-
    subroutine print_matrix_to_fortran(mat, name)
    !! Prints matrix as a real(dp), parameter :: name(dim1, dim2) = reshape([...], [dim1, dim2])
       real(dp), intent(in) :: mat(:, :)

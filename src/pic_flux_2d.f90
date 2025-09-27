@@ -5,78 +5,77 @@ module pic_swe_flux_2d
    use pic_constants, only: gravity
    implicit none
 
-  type :: flux_type 
+   type :: flux_type
 
-  real(dp), allocatable :: flux_h(:,:)
-  real(dp), allocatable :: flux_hu(:,:)
-  real(dp), allocatable :: flux_hv(:,:)
+      real(dp), allocatable :: flux_h(:, :)
+      real(dp), allocatable :: flux_hu(:, :)
+      real(dp), allocatable :: flux_hv(:, :)
 
-  contains 
+   contains
 
-  procedure :: allocate_fluxes
-  procedure :: set_fluxes
-  procedure :: deallocate_fluxes
+      procedure :: allocate_fluxes
+      procedure :: set_fluxes
+      procedure :: deallocate_fluxes
 
-  end type flux_type 
+   end type flux_type
 
 contains
 
-  subroutine allocate_fluxes(fluxes, nx, ny)
-    class(flux_type), intent(inout) :: fluxes 
-    integer(default_int), intent(in) :: nx, ny 
+   subroutine allocate_fluxes(fluxes, nx, ny)
+      class(flux_type), intent(inout) :: fluxes
+      integer(default_int), intent(in) :: nx, ny
 
-    allocate(fluxes%flux_h(nx,ny))
-    allocate(fluxes%flux_hu(nx,ny))
-    allocate(fluxes%flux_hv(nx,ny))
+      allocate (fluxes%flux_h(nx, ny))
+      allocate (fluxes%flux_hu(nx, ny))
+      allocate (fluxes%flux_hv(nx, ny))
 
-  end subroutine allocate_fluxes
+   end subroutine allocate_fluxes
 
-  subroutine set_fluxes(fluxes, a, threaded)
-    class(flux_type), intent(inout) :: fluxes 
-    real(dp), intent(in) :: a 
-    logical, intent(in), optional :: threaded
-    logical :: use_omp
-    integer(int64) :: nx, ny
-    integer(int64) :: i, j
+   subroutine set_fluxes(fluxes, a, threaded)
+      class(flux_type), intent(inout) :: fluxes
+      real(dp), intent(in) :: a
+      logical, intent(in), optional :: threaded
+      logical :: use_omp
+      integer(int64) :: nx, ny
+      integer(int64) :: i, j
 
-    if(present(threaded)) then 
-      use_omp = threaded
-    else
-      use_omp = .true.
-    end if
+      if (present(threaded)) then
+         use_omp = threaded
+      else
+         use_omp = .true.
+      end if
 
-     if(use_omp) then 
-     ! in theory this could be good for the GPU
-     nx = size(fluxes%flux_h,1)
-     ny = size(fluxes%flux_h,2)
-     !$omp target teams distribute parallel do simd collapse(2) private(i,j) default(shared) & 
-     !$omp map(to:fluxes, fluxes%flux_h, fluxes%flux_hu, fluxes%flux_hv)
-     do i = 1, nx
-       do j = 1, ny 
-         fluxes%flux_h(i,j) = a
-         fluxes%flux_hu(i,j) = a
-         fluxes%flux_hv(i,j) = a
-       end do 
-     end do 
-     !$omp end target teams distribute parallel do simd
-     else 
-    fluxes%flux_h = a
-    fluxes%flux_hu = a
-    fluxes%flux_hv = a
-    endif 
+      if (use_omp) then
+         ! in theory this could be good for the GPU
+         nx = size(fluxes%flux_h, 1)
+         ny = size(fluxes%flux_h, 2)
+         !$omp target teams distribute parallel do simd collapse(2) private(i,j) default(shared) &
+         !$omp map(to:fluxes, fluxes%flux_h, fluxes%flux_hu, fluxes%flux_hv)
+         do i = 1, nx
+            do j = 1, ny
+               fluxes%flux_h(i, j) = a
+               fluxes%flux_hu(i, j) = a
+               fluxes%flux_hv(i, j) = a
+            end do
+         end do
+         !$omp end target teams distribute parallel do simd
+      else
+         fluxes%flux_h = a
+         fluxes%flux_hu = a
+         fluxes%flux_hv = a
+      end if
 
+   end subroutine set_fluxes
 
-  end subroutine set_fluxes
+   subroutine deallocate_fluxes(fluxes)
+      class(flux_type), intent(inout) :: fluxes
 
-  subroutine deallocate_fluxes(fluxes)
-    class(flux_type), intent(inout) :: fluxes 
+      deallocate (fluxes%flux_h)
+      deallocate (fluxes%flux_hu)
+      deallocate (fluxes%flux_hv)
+   end subroutine deallocate_fluxes
 
-    deallocate(fluxes%flux_h)
-    deallocate(fluxes%flux_hu)
-    deallocate(fluxes%flux_hv)
-  end subroutine deallocate_fluxes
-
-  subroutine compute_rusanov_fluxes_xy(state, flux_x, flux_y)
+   subroutine compute_rusanov_fluxes_xy(state, flux_x, flux_y)
       type(state_2d_type), intent(inout) :: state
       type(flux_type), intent(inout) :: flux_x, flux_y
 
@@ -86,7 +85,6 @@ contains
 
          nx = state%grid%nx
          ny = state%grid%ny
-
 
          flux_loop: block
             real(dp) :: h_L, hu_L, hv_L, u_L, v_L, c_L
@@ -101,146 +99,139 @@ contains
             integer(default_int) :: i_end, j_end
             integer(default_int), parameter :: bx = 32, by = 32
             real(dp), parameter :: sqroot_gravity = sqrt(gravity)
-            real(dp), parameter :: half_gravity = 0.5_dp * gravity
+            real(dp), parameter :: half_gravity = 0.5_dp*gravity
 
             flux_L = 0.0_dp
-            flux_R = 0.0_dp  
+            flux_R = 0.0_dp
             flux = 0.0_dp
 
 !$omp target teams loop collapse(2) bind(teams) num_teams(2048) thread_limit(128) &
 !$omp private(i, j,  h_L, h_R, hu_L, hu_R, hv_L, hv_R, u_L, u_R, v_L, v_R, flux_L, flux_R, flux, y_flux, c_L, c_R, a_max) &
-!$omp private( y_h_L, y_h_R, y_hu_L, y_hu_R, y_hv_L, y_hv_R, y_u_L, y_u_R, y_v_L, y_v_R, y_flux_L, y_flux_R,  y_c_L, y_c_R, y_a_max)& 
-!$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum)& 
+!$omp private( y_h_L, y_h_R, y_hu_L, y_hu_R, y_hv_L, y_hv_R, y_u_L, y_u_R, y_v_L, y_v_R, y_flux_L, y_flux_R,  y_c_L, y_c_R, y_a_max)&
+!$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum)&
 !$omp map(tofrom: flux_x, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv) &
 !$omp map(tofrom: flux_y, flux_y%flux_h, flux_y%flux_hu, flux_y%flux_hv)
-                     do j = 1, ny
-                      do i = 1, nx
-                        h_L = state%water_height(i, j)
-                        hu_L = state%x_momentum(i, j)
-                        hv_L = state%y_momentum(i, j)
-                        h_R = state%water_height(i + 1, j)
-                        hu_R = state%x_momentum(i + 1, j)
-                        hv_R = state%y_momentum(i + 1, j)
+            do j = 1, ny
+               do i = 1, nx
+                  h_L = state%water_height(i, j)
+                  hu_L = state%x_momentum(i, j)
+                  hv_L = state%y_momentum(i, j)
+                  h_R = state%water_height(i + 1, j)
+                  hu_R = state%x_momentum(i + 1, j)
+                  hv_R = state%y_momentum(i + 1, j)
 
-                        if (h_L < epsilon) h_L = epsilon
-                        if (h_L > epsilon) then
-                          u_L = hu_L/h_L
-                          v_L = hv_L/h_L
-                        else
-                          u_L = 0.0_dp
-                          v_L = 0.0_dp
-                        end if
-                        if (h_R < epsilon) h_R = epsilon
-                        if (h_R > epsilon) then
-                          u_R = hu_R/h_R
-                          v_R = hv_R/h_R
-                        else
-                          u_R = 0.0_dp
-                          v_R = 0.0_dp
-                        end if
+                  if (h_L < epsilon) h_L = epsilon
+                  if (h_L > epsilon) then
+                     u_L = hu_L/h_L
+                     v_L = hv_L/h_L
+                  else
+                     u_L = 0.0_dp
+                     v_L = 0.0_dp
+                  end if
+                  if (h_R < epsilon) h_R = epsilon
+                  if (h_R > epsilon) then
+                     u_R = hu_R/h_R
+                     v_R = hv_R/h_R
+                  else
+                     u_R = 0.0_dp
+                     v_R = 0.0_dp
+                  end if
 
-                        flux_L(1) = hu_L
-                        flux_L(2) = hu_L*u_L + half_gravity*h_L**2
-                        flux_L(3) = hu_L*v_L
-                        
-                        flux_R(1) = hu_R
-                        flux_R(2) = hu_R*u_R + half_gravity*h_R**2
-                        flux_R(3) = hu_R*v_R
+                  flux_L(1) = hu_L
+                  flux_L(2) = hu_L*u_L + half_gravity*h_L**2
+                  flux_L(3) = hu_L*v_L
 
+                  flux_R(1) = hu_R
+                  flux_R(2) = hu_R*u_R + half_gravity*h_R**2
+                  flux_R(3) = hu_R*v_R
 
-                        c_L = abs(u_L) + sqroot_gravity*sqrt(h_L)
-                        c_R = abs(u_R) + sqroot_gravity*sqrt(h_R)
+                  c_L = abs(u_L) + sqroot_gravity*sqrt(h_L)
+                  c_R = abs(u_R) + sqroot_gravity*sqrt(h_R)
 
-                        a_max = max(c_L, c_R)
+                  a_max = max(c_L, c_R)
 
-                        flux(1) = 0.5_dp*(flux_L(1) + flux_R(1)) - 0.5_dp*a_max*(h_R - h_L)
-                        flux(2) = 0.5_dp*(flux_L(2) + flux_R(2)) - 0.5_dp*a_max*(hu_R - hu_L)
-                        flux(3) = 0.5_dp*(flux_L(3) + flux_R(3)) - 0.5_dp*a_max*(hv_R - hv_L)
+                  flux(1) = 0.5_dp*(flux_L(1) + flux_R(1)) - 0.5_dp*a_max*(h_R - h_L)
+                  flux(2) = 0.5_dp*(flux_L(2) + flux_R(2)) - 0.5_dp*a_max*(hu_R - hu_L)
+                  flux(3) = 0.5_dp*(flux_L(3) + flux_R(3)) - 0.5_dp*a_max*(hv_R - hv_L)
 
-                        flux_x%flux_h(i + 1, j) = flux(1)
-                        flux_x%flux_hu(i + 1, j) = flux(2)
-                        flux_x%flux_hv(i + 1, j) = flux(3)
+                  flux_x%flux_h(i + 1, j) = flux(1)
+                  flux_x%flux_hu(i + 1, j) = flux(2)
+                  flux_x%flux_hv(i + 1, j) = flux(3)
 
-                        y_h_L = state%water_height(i, j)
-                        y_hu_L = state%x_momentum(i, j)
-                        y_hv_L = state%y_momentum(i, j)
-                        y_h_R = state%water_height(i, j + 1)
-                        y_hu_R = state%x_momentum(i, j + 1)
-                        y_hv_R = state%y_momentum(i, j + 1)
-                        ! this can be a subroutine
-                        if (y_h_L < epsilon) y_h_L = epsilon
-                        if (y_h_L > epsilon) then
-                          y_u_L = y_hu_L/y_h_L
-                          y_v_L = y_hv_L/y_h_L
-                        else
-                          y_u_L = 0.0_dp
-                          y_v_L = 0.0_dp
-                        end if
-                        if (y_h_R < epsilon) y_h_R = epsilon
-                        if (y_h_R > epsilon) then
-                          y_u_R = y_hu_R/y_h_R
-                          y_v_R = y_hv_R/y_h_R
-                        else
-                          y_u_R = 0.0_dp
-                          y_v_R = 0.0_dp
-                        end if
+                  y_h_L = state%water_height(i, j)
+                  y_hu_L = state%x_momentum(i, j)
+                  y_hv_L = state%y_momentum(i, j)
+                  y_h_R = state%water_height(i, j + 1)
+                  y_hu_R = state%x_momentum(i, j + 1)
+                  y_hv_R = state%y_momentum(i, j + 1)
+                  ! this can be a subroutine
+                  if (y_h_L < epsilon) y_h_L = epsilon
+                  if (y_h_L > epsilon) then
+                     y_u_L = y_hu_L/y_h_L
+                     y_v_L = y_hv_L/y_h_L
+                  else
+                     y_u_L = 0.0_dp
+                     y_v_L = 0.0_dp
+                  end if
+                  if (y_h_R < epsilon) y_h_R = epsilon
+                  if (y_h_R > epsilon) then
+                     y_u_R = y_hu_R/y_h_R
+                     y_v_R = y_hv_R/y_h_R
+                  else
+                     y_u_R = 0.0_dp
+                     y_v_R = 0.0_dp
+                  end if
 
+                  y_flux_L(1) = y_hu_L
+                  y_flux_L(2) = y_hu_L*y_u_L + half_gravity*y_h_L**2
+                  y_flux_L(3) = y_hu_L*y_v_L
+                  y_flux_R(1) = y_hu_R
+                  y_flux_R(2) = y_hu_R*y_u_R + half_gravity*y_h_R**2
+                  y_flux_R(3) = y_hu_R*y_v_R
 
-                        y_flux_L(1) = y_hu_L
-                        y_flux_L(2) = y_hu_L*y_u_L + half_gravity*y_h_L**2
-                        y_flux_L(3) = y_hu_L*y_v_L
-                        y_flux_R(1) = y_hu_R
-                        y_flux_R(2) = y_hu_R*y_u_R + half_gravity*y_h_R**2
-                        y_flux_R(3) = y_hu_R*y_v_R
+                  y_c_L = abs(y_u_L) + sqroot_gravity*sqrt(y_h_L)
+                  y_c_R = abs(y_u_R) + sqroot_gravity*sqrt(y_h_R)
 
+                  y_a_max = max(y_c_L, y_c_R)
 
+                  y_flux(1) = 0.5_dp*(y_flux_L(1) + y_flux_R(1)) - 0.5_dp*y_a_max*(y_h_R - y_h_L)
+                  y_flux(2) = 0.5_dp*(y_flux_L(2) + y_flux_R(2)) - 0.5_dp*y_a_max*(y_hu_R - y_hu_L)
+                  y_flux(3) = 0.5_dp*(y_flux_L(3) + y_flux_R(3)) - 0.5_dp*y_a_max*(y_hv_R - y_hv_L)
 
-                        y_c_L = abs(y_u_L) + sqroot_gravity*sqrt(y_h_L)
-                        y_c_R = abs(y_u_R) + sqroot_gravity*sqrt(y_h_R)
-
-                        y_a_max = max(y_c_L, y_c_R)
-
-                        y_flux(1) = 0.5_dp*(y_flux_L(1) + y_flux_R(1)) - 0.5_dp*y_a_max*(y_h_R -  y_h_L)
-                        y_flux(2) = 0.5_dp*(y_flux_L(2) + y_flux_R(2)) - 0.5_dp*y_a_max*(y_hu_R - y_hu_L)
-                        y_flux(3) = 0.5_dp*(y_flux_L(3) + y_flux_R(3)) - 0.5_dp*y_a_max*(y_hv_R - y_hv_L)
-
-                        flux_y%flux_h(i, j + 1) =  y_flux(1)
-                        flux_y%flux_hu(i, j + 1) = y_flux(2)
-                        flux_y%flux_hv(i, j + 1) = y_flux(3)
-
+                  flux_y%flux_h(i, j + 1) = y_flux(1)
+                  flux_y%flux_hu(i, j + 1) = y_flux(2)
+                  flux_y%flux_hv(i, j + 1) = y_flux(3)
 
                end do
             end do
             !$omp end target teams loop
 
-
+!$omp target teams loop
+            do i = 1, size(flux_y%flux_h, 1)
+               flux_y%flux_h(i, 1) = 0.0_dp
+               flux_y%flux_h(i, ny + 1) = 0.0_dp
+               flux_y%flux_hu(i, 1) = 0.0_dp
+               flux_y%flux_hu(i, ny + 1) = 0.0_dp
+               flux_y%flux_hv(i, 1) = 0.0_dp
+               flux_y%flux_hv(i, ny + 1) = 0.0_dp
+            end do
 
 !$omp target teams loop
-do i = 1, size(flux_y%flux_h,1)
-   flux_y%flux_h(i,1)      = 0.0_dp
-   flux_y%flux_h(i,ny+1)   = 0.0_dp
-   flux_y%flux_hu(i,1)     = 0.0_dp
-   flux_y%flux_hu(i,ny+1)  = 0.0_dp
-   flux_y%flux_hv(i,1)     = 0.0_dp
-   flux_y%flux_hv(i,ny+1)  = 0.0_dp
-end do
-
-!$omp target teams loop
-do j = 1, size(flux_x%flux_h,2)
-   flux_x%flux_h(1,j)      = 0.0_dp
-   flux_x%flux_h(nx+1,j)   = 0.0_dp
-   flux_x%flux_hu(1,j)     = 0.0_dp
-   flux_x%flux_hu(nx+1,j)  = 0.0_dp
-   flux_x%flux_hv(1,j)     = 0.0_dp
-   flux_x%flux_hv(nx+1,j)  = 0.0_dp
-end do
+            do j = 1, size(flux_x%flux_h, 2)
+               flux_x%flux_h(1, j) = 0.0_dp
+               flux_x%flux_h(nx + 1, j) = 0.0_dp
+               flux_x%flux_hu(1, j) = 0.0_dp
+               flux_x%flux_hu(nx + 1, j) = 0.0_dp
+               flux_x%flux_hv(1, j) = 0.0_dp
+               flux_x%flux_hv(nx + 1, j) = 0.0_dp
+            end do
          end block flux_loop
 
       end block workspace
    contains
 
       pure subroutine compute_velocity(h, hu, hv, u, v)
-      !$omp declare target
+         !$omp declare target
          real(dp), intent(inout) :: h
          real(dp), intent(in)    :: hu, hv
          real(dp), intent(out)   :: u, v

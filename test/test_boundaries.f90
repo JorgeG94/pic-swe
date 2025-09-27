@@ -1,6 +1,6 @@
 module test_boundaries
    use pic_types, only: dp
-   use pic_swe_grid_2d, only: grid_2d_type, init_grid, generate_2d_grids 
+   use pic_swe_grid_2d, only: grid_2d_type, init_grid, generate_2d_grids
    use pic_swe_state_2d, only: state_2d_type, initialize_state, initialize_dam_break
    use pic_swe_boundaries, only: apply_reflective_boundaries
    use testdrive, only: new_unittest, unittest_type, error_type, check, test_failed

@@ -22,9 +22,9 @@ contains
 
       max_speed = 0.0_dp
 
-      !$omp target teams distribute parallel do collapse(2) default(shared) private(i, j, h, u, v, a)  & 
+      !$omp target teams distribute parallel do collapse(2) default(shared) private(i, j, h, u, v, a)  &
       !$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum, max_speed) &
-      !$omp reduction(max:max_speed) 
+      !$omp reduction(max:max_speed)
       do j = 1, ny
       do i = 1, nx
          h = state%water_height(i, j)

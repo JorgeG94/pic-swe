@@ -31,10 +31,13 @@ if(NOT TARGET test-drive::test-drive AND ENABLE_TESTING)
 endif()
 
 if(NOT TARGET pic::pic)
-find_package("pic" REQUIRED)
+  find_package("pic" REQUIRED)
 endif()
 
-find_package(OpenMP COMPONENTS Fortran REQUIRED)
+find_package(
+  OpenMP
+  COMPONENTS Fortran
+  REQUIRED)
 
 add_library(${main_lib} STATIC)
 

@@ -66,11 +66,11 @@ contains
       block
          integer(default_int) :: i, j
 
-         do j = 1, grid%ny 
-          do i = 1, grid%nx
-            grid%x2d(i, j) = grid%x(i)
-            grid%y2d(i, j) = grid%y(j)
-         end do
+         do j = 1, grid%ny
+            do i = 1, grid%nx
+               grid%x2d(i, j) = grid%x(i)
+               grid%y2d(i, j) = grid%y(j)
+            end do
          end do
       end block
 
