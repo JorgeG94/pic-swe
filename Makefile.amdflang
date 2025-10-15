@@ -46,7 +46,7 @@ EXE      := main
 
 # Include & module dirs
 INC := -I$(MOD_DIR) -I$(SRC_DIR) -I$(DEPS_DIR) -I$(GRID_DIR)
-MOD := -module $(MOD_DIR)
+MOD := -J$(MOD_DIR)
 
 # ---- Order-sensitive object list for the library ----
 # (matches the order you provided)
