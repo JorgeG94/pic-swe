@@ -27,6 +27,8 @@ elseif("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "NVHPC")
   set(standard_compile_flags "-traceback")
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES "LLVMFlang")
   set(standard_compile_flags "")
+else()
+  message(WARNING "${CMAKE_Fortran_COMPILER_ID} Not recognized!, please add me ")
 endif()
 
 # Customize compiler flags
