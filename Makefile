@@ -26,7 +26,7 @@ AR      ?= ar
 ARFLAGS ?= rcs
 
 # Flags (override on command line if desired)
-FFLAGS  ?= -O3 -fopenmp --offload-arch=gfx90a 
+FFLAGS  ?= -O3 -fopenmp 
 LDFLAGS ?=
 
 # Tree
