@@ -6,9 +6,9 @@ module pic_swe_time_driver
    use pic_swe_boundaries, only: apply_reflective_boundaries
    use pic_swe_update_2d, only: enforce_min_height, update_state_block
    use pic_swe_timestep, only: compute_dt
-   use pic_timer, only: pic_timer_type
+   use pic_timer, only: timer_type
    use pic_logger, only: global => global_logger
-   use pic_string, only: to_string
+   use pic_io, only: to_char
 
    implicit none
 
@@ -41,10 +41,10 @@ contains
       integer, intent(in) :: step
       real(dp) :: current_mass
       current_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
-      call global%verbose("Step "//to_string(step)//" Mass conservation check: "// &
-                          "Initial mass: "//to_string(initial_mass)// &
-                          ", Current mass: "//to_string(current_mass)// &
-                          ", Δmass: "//to_string(current_mass - initial_mass))
+      call global%verbose("Step "//to_char(step)//" Mass conservation check: "// &
+                          "Initial mass: "//to_char(initial_mass)// &
+                          ", Current mass: "//to_char(current_mass)// &
+                          ", Δmass: "//to_char(current_mass - initial_mass))
 
    end subroutine check_mass_conservation
 
@@ -54,7 +54,7 @@ contains
       integer, intent(in) :: step
       character(len=100) :: filename
       integer :: i, j
-      filename = "height_step_"//to_string(step)//".csv"
+      filename = "height_step_"//to_char(step)//".csv"
       open (unit=100, file=filename, status='replace')
       do j = 1, state%grid%ny
          do i = 1, state%grid%nx
@@ -90,8 +90,8 @@ contains
       call flux_y%allocate_fluxes(nx, ny + 1)
 
       evolve_loop: block
-         type(pic_timer_type) :: my_timer, second_timer
-         type(pic_timer_type) :: inner_timer
+         type(timer_type) :: my_timer, second_timer
+         type(timer_type) :: inner_timer
          real(dp) :: elapsed_time
          real(dp), parameter :: h_min = 1.0e-5_dp
          real(dp) :: before_mass, after_mass, initial_mass, final_mass
@@ -147,10 +147,10 @@ contains
                total_mom_y = sum(state%y_momentum)*state%grid%dx*state%grid%dy
 
                call global%info( &
-                  pad(to_string(step), 8)//" "//pad(to_string(round_dp(t, 4)), 12)//" "// &
-                  pad(to_string(round_dp(dt, 4)), 12)//" "//pad(to_string(round_dp(elapsed_time, 4)), 14)//" "// &
-                  pad(to_string(total_mass), 12)//" "// &
-                  pad(to_string(round_dp((after_mass - before_mass), 4)), 12))
+                  pad(to_char(step), 8)//" "//pad(to_char(round_dp(t, 4)), 12)//" "// &
+                  pad(to_char(round_dp(dt, 4)), 12)//" "//pad(to_char(round_dp(elapsed_time, 4)), 14)//" "// &
+                  pad(to_char(total_mass), 12)//" "// &
+                  pad(to_char(round_dp((after_mass - before_mass), 4)), 12))
 
                ! end block printing
 
@@ -160,15 +160,15 @@ contains
          end do
          call second_timer%stop()
          elapsed_time = second_timer%get_elapsed_time()
-         print *, to_string((elapsed_time/step))
+         print *, to_char((elapsed_time/step))
          !$omp end target data
          !$omp target exit data map(release: flux_x, flux_y, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv, flux_y%flux_h, flux_y%flux_hu,flux_y%flux_hv)
          final_mass = sum(state%water_height)*state%grid%dx*state%grid%dy
 
-         call global%info("Final mass: "//to_string(final_mass)// &
-                          ", Initial mass: "//to_string(initial_mass)// &
-                          ", Δmass: "//to_string(final_mass - initial_mass)// &
-                          " Lost "//to_string(100*(1 - (final_mass/initial_mass)))//" % of the initial mass")
+         call global%info("Final mass: "//to_char(final_mass)// &
+                          ", Initial mass: "//to_char(initial_mass)// &
+                          ", Δmass: "//to_char(final_mass - initial_mass)// &
+                          " Lost "//to_char(100*(1 - (final_mass/initial_mass)))//" % of the initial mass")
       end block evolve_loop
 
       call flux_x%deallocate_fluxes()

@@ -1,6 +1,6 @@
 module test_timestep
    use pic_test_helpers, only: is_equal
-   use pic_string_utils, only: to_string
+   use pic_io, only: to_char
    use pic_types, only: dp
    use pic_swe_timestep, only: compute_dt
    use pic_swe_grid_2d, only: grid_2d_type, init_grid, generate_2d_grids
@@ -73,7 +73,7 @@ contains
 
       ! Compute the time step
       dt = compute_dt(state, cfl)
-      call check(error, is_equal(dt, expected_dt), "Time step should be "//to_string(expected_dt))
+      call check(error, is_equal(dt, expected_dt), "Time step should be "//to_char(expected_dt))
 
    end subroutine test_compute_dt_positive
 

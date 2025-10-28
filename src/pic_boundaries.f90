@@ -16,8 +16,8 @@ contains
       ny = state%grid%ny
 
 !$omp target teams loop collapse(2) bind(teams) thread_limit(128)
-      do j = 1, ny
-         do i = 1, nx
+      do j = 1, ny 
+         do i = 1, nx 
             ! Corners first (unique values)
             if (i == 1 .and. j == 1) then
                state%water_height(1, 1) = state%water_height(2, 2)

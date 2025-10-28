@@ -1,7 +1,7 @@
 program main
    use pic, only: pic_print_banner
    use pic_types, only: sp, dp, default_int
-   use pic_timer, only: pic_timer_type
+   use pic_timer, only: timer_type
    use pic_swe_grid_2d
    use pic_swe_state_2d
    use pic_swe_time_driver
@@ -18,11 +18,11 @@ program main
 
    xmin = zero
    ymin = zero
-   xmax = 1024.0_dp
-   ymax = 1024.0_dp
+   xmax = 512.0_dp
+   ymax = 512.0_dp
    dx = 1.0_dp
    block
-      type(pic_timer_type) :: my_timer
+      type(timer_type) :: my_timer
       real(dp) :: elapsed_time
       type(state_2d_type) :: state
       real(dp) :: t_end
@@ -39,23 +39,23 @@ program main
       call generate_2d_grids(grid)
       call my_timer%stop()
       elapsed_time = my_timer%get_elapsed_time()
-      call global%info("Grid generation tok "//to_string(elapsed_time)//" seconds")
-      call global%info("Grid size: nx = "//to_string(grid%nx)//" ny = "//to_string(grid%ny))
-      call global%info("Total number of points is "//to_string(grid%nx*grid%ny))
+      call global%info("Grid generation tok "//to_char(elapsed_time)//" seconds")
+      call global%info("Grid size: nx = "//to_char(grid%nx)//" ny = "//to_char(grid%ny))
+      call global%info("Total number of points is "//to_char(grid%nx*grid%ny))
       call my_timer%start()
       call state%initialize_state(grid)
-      call global%info("Dam break initialized with h_left = "//to_string(h_left)// &
-                       ", h_right = "//to_string(h_right)//", x_dplit = "//to_string(x_dplit))
+      call global%info("Dam break initialized with h_left = "//to_char(h_left)// &
+                       ", h_right = "//to_char(h_right)//", x_dplit = "//to_char(x_dplit))
       call initialize_dam_break(state, h_left, h_right, x_dplit)
       call my_timer%stop()
       elapsed_time = my_timer%get_elapsed_time()
-      call global%info("Grid initialization tok "//to_string(elapsed_time)//" seconds")
+      call global%info("Grid initialization tok "//to_char(elapsed_time)//" seconds")
 
       call my_timer%start()
       call time_loop(state, t_end, cfl)
       call my_timer%stop()
       elapsed_time = my_timer%get_elapsed_time()
 
-      call global%info("Time loop took "//to_string(elapsed_time)//" seconds")
+      call global%info("Time loop took "//to_char(elapsed_time)//" seconds")
    end block
 end program main

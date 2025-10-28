@@ -1,7 +1,7 @@
 module test_state
    use pic_test_helpers, only: is_equal
    use pic_types, only: dp
-   use pic_string_utils, only: to_string
+   use pic_io, only: to_char
    use pic_swe_state_2d, only: state_2d_type, initialize_state, initialize_dam_break
    use pic_swe_grid_2d, only: grid_2d_type, init_grid
    use testdrive, only: new_unittest, unittest_type, error_type, check, test_failed
@@ -106,8 +106,8 @@ contains
             end do
          end do
 
-      call check(error, is_equal(sum_height_left, correct_height_left), "Sum of water height left of split should be "//to_string(correct_height_left))
-      call check(error, is_equal(sum_height_right, correct_height_right), "Sum of water height right of split should be "//to_string(correct_height_right))
+      call check(error, is_equal(sum_height_left, correct_height_left), "Sum of water height left of split should be "//to_char(correct_height_left))
+      call check(error, is_equal(sum_height_right, correct_height_right), "Sum of water height right of split should be "//to_char(correct_height_right))
       end block height_sum
 
    end subroutine test_initialize_dam_break
