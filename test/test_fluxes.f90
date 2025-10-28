@@ -1,7 +1,6 @@
 module test_fluxes
    use pic_test_helpers, only: is_equal
-   use pic_matrix_printer, only: print_array
-   use pic_string_utils, only: to_string
+   use pic_io, only: to_char
    use pic_types, only: dp
    use pic_swe_flux_2d, only: compute_rusanov_fluxes_xy, flux_type
    use pic_swe_grid_2d, only: grid_2d_type, init_grid, generate_2d_grids
@@ -75,7 +74,7 @@ contains
       ! Compute the time step
       dt = compute_dt(state, cfl)
       !dt = 2.0_dp
-      call check(error, is_equal(dt, expected_dt), "Time step should be "//to_string(expected_dt))
+      call check(error, is_equal(dt, expected_dt), "Time step should be "//to_char(expected_dt))
       call apply_reflective_boundaries(state)
 
       call flux_x%allocate_fluxes(nx + 1, ny)
@@ -153,7 +152,7 @@ contains
       ! Compute the time step
       dt = compute_dt(state, cfl)
       !dt = 2.0_dp
-      call check(error, is_equal(dt, expected_dt), "Time step should be "//to_string(expected_dt))
+      call check(error, is_equal(dt, expected_dt), "Time step should be "//to_char(expected_dt))
       call apply_reflective_boundaries(state)
 
       call flux_x%allocate_fluxes(nx + 1, ny)

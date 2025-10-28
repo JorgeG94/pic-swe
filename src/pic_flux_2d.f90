@@ -111,8 +111,8 @@ contains
 !$omp map(tofrom: state, state%water_height, state%x_momentum, state%y_momentum)&
 !$omp map(tofrom: flux_x, flux_x%flux_h, flux_x%flux_hu, flux_x%flux_hv) &
 !$omp map(tofrom: flux_y, flux_y%flux_h, flux_y%flux_hu, flux_y%flux_hv)
-            do j = 1, ny
-               do i = 1, nx
+            do j = 1, ny - 1
+               do i = 1, nx - 1
                   h_L = state%water_height(i, j)
                   hu_L = state%x_momentum(i, j)
                   hv_L = state%y_momentum(i, j)
